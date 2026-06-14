@@ -1,7 +1,7 @@
 // src/pages/TicketEditor.jsx
 import React, { useState, useCallback, useEffect } from 'react';
 import { useStore } from '../data/store';
-import { genId, fmt, calcTicketTotals } from '../utils/helpers';
+import { genId } from '../utils/helpers';
 import { Breadcrumb, Notice, FormGroup, Input } from '../components/UI';
 
 // ─── LABOR ROW (foreman view - hours only, no rates shown) ───────────────────

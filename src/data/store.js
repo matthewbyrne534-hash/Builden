@@ -19,9 +19,9 @@ const initialState = {
         { id: 's2', name: 'T. Brandt', email: 'tbrandt@apexcg.com', phone: '(215) 555-0187' }
       ],
       classifications: [
-        { id: 'c1', name: 'Foreman', rate: 95, ohp: 10 },
-        { id: 'c2', name: 'Electrician', rate: 75, ohp: 10 },
-        { id: 'c3', name: 'Laborer', rate: 55, ohp: 10 }
+        { id: 'c1', name: 'Foreman', regRate: 95, otRate: 142.50, dtRate: 190 },
+        { id: 'c2', name: 'Electrician', regRate: 75, otRate: 112.50, dtRate: 150 },
+        { id: 'c3', name: 'Laborer', regRate: 55, otRate: 82.50, dtRate: 110 }
       ],
       workers: [
         { id: 'w1', first: 'Mike', last: 'Torres', classId: 'c1' },
@@ -45,7 +45,7 @@ const initialState = {
               date: '2024-10-07',
               desc: 'Ran conduit from panel room to BAS unit location, installed junction boxes and pulled wire.',
               labor: [
-                { id: 'l1', workerId: 'w1', workerName: 'Mike Torres', classId: 'c1', className: 'Foreman', reg: 8, ot: 0, dt: 0, rate: 95, ohp: 10 }
+                { id: 'l1', workerId: 'w1', workerName: 'Mike Torres', classId: 'c1', className: 'Foreman', reg: 8, ot: 0, dt: 0, regRate: 95, otRate: 142.50, dtRate: 190 }
               ],
               materials: [],
               vendors: [],
@@ -62,7 +62,7 @@ const initialState = {
               date: '2024-10-08',
               desc: 'Pulled wire and terminated connections at BAS control panel.',
               labor: [
-                { id: 'l2', workerId: 'w2', workerName: 'Dan Reyes', classId: 'c2', className: 'Electrician', reg: 8, ot: 2, dt: 0, rate: 75, ohp: 10 }
+                { id: 'l2', workerId: 'w2', workerName: 'Dan Reyes', classId: 'c2', className: 'Electrician', reg: 8, ot: 2, dt: 0, regRate: 75, otRate: 112.50, dtRate: 150 }
               ],
               materials: [
                 { id: 'm1', desc: '12/2 wire', unit: 'Linear ft', qty: 60, rate: 1.80, ohp: 15, invoiceRef: 'INV-001', invoiceName: 'invoice_oct8.pdf' }
@@ -93,7 +93,7 @@ const initialState = {
               date: '2024-10-14',
               desc: 'Installed additional conduit runs per RFI-022 response.',
               labor: [
-                { id: 'l3', workerId: 'w2', workerName: 'Dan Reyes', classId: 'c2', className: 'Electrician', reg: 8, ot: 0, dt: 0, rate: 75, ohp: 10 }
+                { id: 'l3', workerId: 'w2', workerName: 'Dan Reyes', classId: 'c2', className: 'Electrician', reg: 8, ot: 0, dt: 0, regRate: 75, otRate: 112.50, dtRate: 150 }
               ],
               materials: [],
               vendors: [],

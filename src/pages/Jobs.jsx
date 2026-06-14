@@ -57,28 +57,30 @@ export default function Jobs({ navigate }) {
           <EmptyState icon="building" message={search ? 'No jobs match your search.' : 'No jobs yet.'} />
         ) : (
           filtered.map(j => {
-            const executed = j.packages.reduce((s, p) => s + calcPackageTotals(p, j).executed, 0);
-            const inProgress = j.packages.filter(p => p.tickets.some(t => ['draft', 'pending-sig'].includes(t.status))).length;
-            const pendingGC = j.packages.filter(p => p.tickets.some(t => t.status === 'submitted')).length;
-            const executedPkgs = j.packages.filter(p => p.tickets.length > 0 && p.tickets.every(t => ['signed', 'approved'].includes(t.status))).length;
+            const openPkgs = j.packages.filter(p => p.tickets.some(t => ['draft', 'pending-sig'].includes(t.status)));
+            const openVal = openPkgs.reduce((s, p) => s + calcPackageTotals(p, j).grand, 0);
+            const pendingPkgs = j.packages.filter(p => p.tickets.some(t => t.status === 'submitted'));
+            const pendingVal = pendingPkgs.reduce((s, p) => s + calcPackageTotals(p, j).grand, 0);
+            const executedPkgs = j.packages.filter(p => p.tickets.length > 0 && p.tickets.every(t => ['signed', 'approved'].includes(t.status)));
+            const executedVal = j.packages.reduce((s, p) => s + calcPackageTotals(p, j).executed, 0);
             return (
               <div key={j.id} className="list-row">
                 <div className="row-body clickable" style={{ cursor: 'pointer' }} onClick={() => navigate('job-detail', { jobId: j.id })}>
                   <div className="row-title">{j.num} — {j.desc}</div>
                   <div className="row-sub">{j.gc}{j.owner ? ' · ' + j.owner : ''}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 16, marginRight: 8 }}>
+                <div style={{ display: 'flex', gap: 20, marginRight: 8 }}>
                   <div className="row-right">
-                    <div className="row-amount" style={{ color: '#666' }}>{inProgress} open</div>
-                    <div className="row-meta">{inProgress} pkg{inProgress !== 1 ? 's' : ''}</div>
+                    <div className="row-amount" style={{ color: '#666' }}>{fmt(openVal)}</div>
+                    <div className="row-meta" style={{ color: '#185FA5' }}>{openPkgs.length} pkg{openPkgs.length !== 1 ? 's' : ''} open</div>
                   </div>
                   <div className="row-right">
-                    <div className="row-amount" style={{ color: '#8A5000' }}>{pendingGC} pending</div>
-                    <div className="row-meta">{pendingGC} pkg{pendingGC !== 1 ? 's' : ''}</div>
+                    <div className="row-amount" style={{ color: '#8A5000' }}>{fmt(pendingVal)}</div>
+                    <div className="row-meta" style={{ color: '#8A5000' }}>{pendingPkgs.length} pkg{pendingPkgs.length !== 1 ? 's' : ''} pending GC</div>
                   </div>
                   <div className="row-right">
-                    <div className="row-amount" style={{ color: '#2A6008' }}>{fmt(executed)}</div>
-                    <div className="row-meta" style={{ color: '#2A6008' }}>{executedPkgs} executed</div>
+                    <div className="row-amount" style={{ color: '#2A6008' }}>{fmt(executedVal)}</div>
+                    <div className="row-meta" style={{ color: '#2A6008' }}>{executedPkgs.length} pkg{executedPkgs.length !== 1 ? 's' : ''} executed</div>
                   </div>
                 </div>
                 <div className="row-actions">

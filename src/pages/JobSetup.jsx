@@ -23,7 +23,6 @@ export default function JobSetup({ jobId, navigate }) {
   const [showSuper, setShowSuper] = useState(false);
   const [selectedDirContact, setSelectedDirContact] = useState(null);
   const [superSearch, setSuperSearch] = useState('');
-  const [superForm, setSuperForm] = useState({ name: '', email: '', phone: '' });
   const [confirmRemoveSuper, setConfirmRemoveSuper] = useState(null);
   const [confirmRemoveCls, setConfirmRemoveCls] = useState(null);
   const [confirmRemoveWorker, setConfirmRemoveWorker] = useState(null);
@@ -58,7 +57,7 @@ export default function JobSetup({ jobId, navigate }) {
   }
 
   // Superintendents
-  function openSuperModal() { setSelectedDirContact(null); setSuperForm({ name: '', email: '', phone: '' }); setSuperSearch(''); setShowSuper(true); }
+  function openSuperModal() { setSelectedDirContact(null); setSuperSearch(''); setShowSuper(true); }
   function saveSuper() {
     if (!selectedDirContact) return alert('Please select a contact from the directory.');
     const c = state.directory.contacts.find(x => x.id === selectedDirContact);

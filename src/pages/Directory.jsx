@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../data/store';
 import { genId } from '../utils/helpers';
-import { Modal, FormGroup, Input, ConfirmModal, SearchBar, Tabs } from '../components/UI';
+import { Modal, FormGroup, Input, ConfirmModal, Tabs } from '../components/UI';
 
 export default function Directory() {
   const { state, dispatch } = useStore();

@@ -110,45 +110,7 @@ export default function Directory() {
   });
   const companyContacts = selectedCompany ? state.directory.contacts.filter(c => c.companyId === selectedCompany.id) : [];
 
-  // Contact form modal content (reused in multiple places)
-  function ContactFormContent() {
-    return (
-      <>
-        <div className="form-grid form-grid-2">
-          <FormGroup label="First name *"><Input value={contactForm.first} onChange={v => setContactForm(f => ({ ...f, first: v }))} placeholder="First" /></FormGroup>
-          <FormGroup label="Last name *"><Input value={contactForm.last} onChange={v => setContactForm(f => ({ ...f, last: v }))} placeholder="Last" /></FormGroup>
-          <FormGroup label="Title / role"><Input value={contactForm.title} onChange={v => setContactForm(f => ({ ...f, title: v }))} placeholder="e.g. Superintendent" /></FormGroup>
-          <FormGroup label="Phone"><Input value={contactForm.phone} onChange={v => setContactForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
-          <FormGroup label="Email" span="2"><Input value={contactForm.email} onChange={v => setContactForm(f => ({ ...f, email: v }))} placeholder="name@company.com" /></FormGroup>
-        </div>
 
-        {!editContact && (
-          <FormGroup label="Company *">
-            <select className="form-input" value={showInlineCompany ? 'not-listed' : contactForm.companyId} onChange={e => handleCompanySelect(e.target.value)}>
-              <option value="">— Select company —</option>
-              {state.directory.companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              <option value="not-listed">+ Company not listed — add new</option>
-            </select>
-          </FormGroup>
-        )}
-
-        {/* Inline company form slides in when "not listed" selected */}
-        {showInlineCompany && (
-          <div style={{ marginTop: 12, padding: '14px 16px', background: '#f8fbff', border: '1px solid #C5DEFA', borderRadius: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#185FA5', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <i className="ti ti-building" /> New company details
-            </div>
-            <div className="form-grid form-grid-2">
-              <FormGroup label="Company name *" span="2"><Input value={inlineCompanyForm.name} onChange={v => setInlineCompanyForm(f => ({ ...f, name: v }))} placeholder="e.g. Apex Construction Group" /></FormGroup>
-              <FormGroup label="Phone"><Input value={inlineCompanyForm.phone} onChange={v => setInlineCompanyForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
-              <FormGroup label="Email"><Input value={inlineCompanyForm.email} onChange={v => setInlineCompanyForm(f => ({ ...f, email: v }))} placeholder="info@company.com" /></FormGroup>
-              <FormGroup label="Address" span="2"><Input value={inlineCompanyForm.address} onChange={v => setInlineCompanyForm(f => ({ ...f, address: v }))} placeholder="Street, City, State ZIP" /></FormGroup>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
 
   // COMPANY DRILL-DOWN VIEW
   if (selectedCompany) {
@@ -230,7 +192,37 @@ export default function Directory() {
         </Modal>
         <Modal open={showContact} onClose={() => { setShowContact(false); setShowInlineCompany(false); }} title={editContact ? 'Edit User' : 'Add User'}
           footer={<><button className="btn" onClick={() => { setShowContact(false); setShowInlineCompany(false); }}>Cancel</button><button className="btn btn-primary" onClick={saveContact}><i className="ti ti-check" /> Save</button></>}>
-          <ContactFormContent />
+        <>
+          <div className="form-grid form-grid-2">
+            <FormGroup label="First name *"><Input value={contactForm.first} onChange={v => setContactForm(f => ({ ...f, first: v }))} placeholder="First" /></FormGroup>
+            <FormGroup label="Last name *"><Input value={contactForm.last} onChange={v => setContactForm(f => ({ ...f, last: v }))} placeholder="Last" /></FormGroup>
+            <FormGroup label="Title / role"><Input value={contactForm.title} onChange={v => setContactForm(f => ({ ...f, title: v }))} placeholder="e.g. Superintendent" /></FormGroup>
+            <FormGroup label="Phone"><Input value={contactForm.phone} onChange={v => setContactForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
+            <FormGroup label="Email" span="2"><Input value={contactForm.email} onChange={v => setContactForm(f => ({ ...f, email: v }))} placeholder="name@company.com" /></FormGroup>
+          </div>
+          {!editContact && (
+            <FormGroup label="Company *">
+              <select className="form-input" value={showInlineCompany ? 'not-listed' : contactForm.companyId} onChange={e => handleCompanySelect(e.target.value)}>
+                <option value="">— Select company —</option>
+                {state.directory.companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="not-listed">+ Company not listed — add new</option>
+              </select>
+            </FormGroup>
+          )}
+          {showInlineCompany && (
+            <div style={{ marginTop: 12, padding: '14px 16px', background: '#f8fbff', border: '1px solid #C5DEFA', borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#185FA5', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-building" /> New company details
+              </div>
+              <div className="form-grid form-grid-2">
+                <FormGroup label="Company name *" span="2"><Input value={inlineCompanyForm.name} onChange={v => setInlineCompanyForm(f => ({ ...f, name: v }))} placeholder="e.g. Apex Construction Group" /></FormGroup>
+                <FormGroup label="Phone"><Input value={inlineCompanyForm.phone} onChange={v => setInlineCompanyForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
+                <FormGroup label="Email"><Input value={inlineCompanyForm.email} onChange={v => setInlineCompanyForm(f => ({ ...f, email: v }))} placeholder="info@company.com" /></FormGroup>
+                <FormGroup label="Address" span="2"><Input value={inlineCompanyForm.address} onChange={v => setInlineCompanyForm(f => ({ ...f, address: v }))} placeholder="Street, City, State ZIP" /></FormGroup>
+              </div>
+            </div>
+          )}
+        </>
         </Modal>
       </div>
     );
@@ -368,7 +360,37 @@ export default function Directory() {
       {/* CONTACT MODAL */}
       <Modal open={showContact} onClose={() => { setShowContact(false); setShowInlineCompany(false); }} title={editContact ? 'Edit User' : 'Add User'}
         footer={<><button className="btn" onClick={() => { setShowContact(false); setShowInlineCompany(false); }}>Cancel</button><button className="btn btn-primary" onClick={saveContact}><i className="ti ti-check" /> Save user</button></>}>
-        <ContactFormContent />
+        <>
+          <div className="form-grid form-grid-2">
+            <FormGroup label="First name *"><Input value={contactForm.first} onChange={v => setContactForm(f => ({ ...f, first: v }))} placeholder="First" /></FormGroup>
+            <FormGroup label="Last name *"><Input value={contactForm.last} onChange={v => setContactForm(f => ({ ...f, last: v }))} placeholder="Last" /></FormGroup>
+            <FormGroup label="Title / role"><Input value={contactForm.title} onChange={v => setContactForm(f => ({ ...f, title: v }))} placeholder="e.g. Superintendent" /></FormGroup>
+            <FormGroup label="Phone"><Input value={contactForm.phone} onChange={v => setContactForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
+            <FormGroup label="Email" span="2"><Input value={contactForm.email} onChange={v => setContactForm(f => ({ ...f, email: v }))} placeholder="name@company.com" /></FormGroup>
+          </div>
+          {!editContact && (
+            <FormGroup label="Company *">
+              <select className="form-input" value={showInlineCompany ? 'not-listed' : contactForm.companyId} onChange={e => handleCompanySelect(e.target.value)}>
+                <option value="">— Select company —</option>
+                {state.directory.companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="not-listed">+ Company not listed — add new</option>
+              </select>
+            </FormGroup>
+          )}
+          {showInlineCompany && (
+            <div style={{ marginTop: 12, padding: '14px 16px', background: '#f8fbff', border: '1px solid #C5DEFA', borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#185FA5', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="ti ti-building" /> New company details
+              </div>
+              <div className="form-grid form-grid-2">
+                <FormGroup label="Company name *" span="2"><Input value={inlineCompanyForm.name} onChange={v => setInlineCompanyForm(f => ({ ...f, name: v }))} placeholder="e.g. Apex Construction Group" /></FormGroup>
+                <FormGroup label="Phone"><Input value={inlineCompanyForm.phone} onChange={v => setInlineCompanyForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
+                <FormGroup label="Email"><Input value={inlineCompanyForm.email} onChange={v => setInlineCompanyForm(f => ({ ...f, email: v }))} placeholder="info@company.com" /></FormGroup>
+                <FormGroup label="Address" span="2"><Input value={inlineCompanyForm.address} onChange={v => setInlineCompanyForm(f => ({ ...f, address: v }))} placeholder="Street, City, State ZIP" /></FormGroup>
+              </div>
+            </div>
+          )}
+        </>
       </Modal>
 
       {/* CONFIRM MODALS */}

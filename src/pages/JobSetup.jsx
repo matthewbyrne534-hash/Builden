@@ -58,18 +58,11 @@ export default function JobSetup({ jobId, navigate }) {
   }
 
   // Superintendents
-  function openSuperModal() { setSelectedDirContact(null); setSuperForm({ name: '', email: '', phone: '' }); setSuperSearch(''); setSuperTab('dir'); setShowSuper(true); }
+  function openSuperModal() { setSelectedDirContact(null); setSuperForm({ name: '', email: '', phone: '' }); setSuperSearch(''); setShowSuper(true); }
   function saveSuper() {
-    if (superTab === 'dir') {
-      if (!selectedDirContact) return alert('Please select a contact from the directory.');
-      const c = state.directory.contacts.find(x => x.id === selectedDirContact);
-      if (c) dispatch({ type: 'ADD_SUPER', jobId: job.id, super: { id: genId(), name: c.first + ' ' + c.last, email: c.email, phone: c.phone } });
-    } else {
-      if (!superForm.name) return alert('Name is required.');
-      dispatch({ type: 'ADD_SUPER', jobId: job.id, super: { id: genId(), ...superForm } });
-      // Also save to directory
-      dispatch({ type: 'ADD_CONTACT', contact: { id: genId(), companyId: '', first: superForm.name.split(' ')[0] || superForm.name, last: superForm.name.split(' ').slice(1).join(' ') || '', title: 'Superintendent', phone: superForm.phone, email: superForm.email } });
-    }
+    if (!selectedDirContact) return alert('Please select a contact from the directory.');
+    const c = state.directory.contacts.find(x => x.id === selectedDirContact);
+    if (c) dispatch({ type: 'ADD_SUPER', jobId: job.id, super: { id: genId(), name: c.first + ' ' + c.last, email: c.email, phone: c.phone } });
     setShowSuper(false);
   }
 

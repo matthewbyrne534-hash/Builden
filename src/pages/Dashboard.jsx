@@ -48,11 +48,6 @@ export default function Dashboard({ navigate }) {
           <div className="card-header-left">
             <div className="card-title">Active Jobs</div>
           </div>
-          <div className="card-actions">
-            <button className="btn btn-primary btn-sm" onClick={() => navigate('new-job')}>
-              <i className="ti ti-plus" /> New job
-            </button>
-          </div>
         </div>
 
         {jobs.length === 0 ? (
@@ -91,3 +86,4 @@ export default function Dashboard({ navigate }) {
     </div>
   );
 }
+

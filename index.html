@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FieldTicket — Prototype v2</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:#1a1a1a;background:#f5f5f3}
+.app{display:flex;height:100vh;overflow:hidden}
+/* SIDEBAR */
+.sidebar{width:230px;background:#fff;border-right:1px solid #e5e5e3;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.logo{padding:18px 16px;border-bottom:1px solid #e5e5e3}
+.logo-text{font-size:17px;font-weight:700;color:#185FA5;letter-spacing:-0.5px}
+.logo-sub{font-size:11px;color:#999;margin-top:2px}
+.nav{padding:10px 8px;flex:1}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:#555;margin-bottom:1px;transition:all 0.1s;user-select:none}
+.nav-item:hover{background:#f5f5f3;color:#1a1a1a}
+.nav-item.active{background:#EBF3FB;color:#185FA5;font-weight:600}
+.nav-item i{font-size:17px;flex-shrink:0}
+.nav-sep{height:1px;background:#f0f0ee;margin:8px 10px}
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid #e5e5e3;padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:600;color:#1a1a1a}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.content{flex:1;overflow-y:auto;padding:24px;max-width:1100px}
+/* PAGES */
+.page{display:none}
+.page.active{display:block}
+/* BUTTONS */
+.btn{padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid #d5d5d3;background:#fff;color:#1a1a1a;display:inline-flex;align-items:center;gap:6px;transition:all 0.1s;font-weight:500;white-space:nowrap}
+.btn:hover{background:#f5f5f3}
+.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn-primary:hover{background:#1050889}
+.btn-danger{background:#fff;color:#c0392b;border-color:#e0b0ae}
+.btn-danger:hover{background:#fdf0ef}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-icon{padding:6px;border-radius:7px}
+/* CARDS */
+.card{background:#fff;border:1px solid #e5e5e3;border-radius:12px;padding:18px 22px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:15px;font-weight:600}
+.card-subtitle{font-size:12px;color:#888;margin-top:2px}
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.metric{background:#fff;border:1px solid #e5e5e3;border-radius:10px;padding:14px 16px}
+.metric-label{font-size:12px;color:#888;margin-bottom:4px}
+.metric-value{font-size:20px;font-weight:700;color:#1a1a1a}
+.metric-sub{font-size:11px;color:#aaa;margin-top:3px}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
+.badge-success{background:#EAF3DE;color:#2E6B0A}
+.badge-warning{background:#FFF0DC;color:#8A5000}
+.badge-info{background:#E6F1FB;color:#185FA5}
+.badge-gray{background:#f0f0ee;color:#666}
+.badge-purple{background:#F0EAFC;color:#6B21A8}
+.badge-red{background:#FDEAEA;color:#B91C1C}
+/* ROWS */
+.list-row{display:flex;align-items:center;padding:11px 0;border-bottom:1px solid #f0f0ee;gap:12px;cursor:pointer}
+.list-row:last-child{border-bottom:none}
+.list-row:hover .row-title{color:#185FA5}
+.row-icon{width:34px;height:34px;border-radius:8px;background:#EBF3FB;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#185FA5;flex-shrink:0}
+.row-body{flex:1;min-width:0}
+.row-title{font-size:13px;font-weight:600;transition:color 0.1s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-sub{font-size:11px;color:#888;margin-top:2px}
+.row-right{text-align:right;flex-shrink:0}
+.row-amount{font-size:13px;font-weight:600}
+.row-meta{font-size:11px;color:#888;margin-top:2px}
+/* FORMS */
+.form-grid{display:grid;gap:14px;margin-bottom:14px}
+.form-grid-2{grid-template-columns:1fr 1fr}
+.form-grid-3{grid-template-columns:1fr 1fr 1fr}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:12px;font-weight:600;color:#555}
+.form-input{font-size:13px;padding:8px 11px;border-radius:8px;border:1px solid #d5d5d3;background:#fff;color:#1a1a1a;width:100%;transition:border 0.1s}
+.form-input:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,0.1)}
+/* TABLES */
+.tbl-wrap{overflow-x:auto;margin-bottom:4px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:11px;font-weight:700;color:#888;padding:7px 10px;border-bottom:2px solid #e5e5e3;white-space:nowrap;background:#fafaf9}
+.tbl td{padding:8px 10px;border-bottom:1px solid #f0f0ee;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl-input{font-size:13px;padding:6px 8px;border-radius:6px;border:1px solid #e0e0de;background:#fff;width:100%}
+.tbl-input:focus{outline:none;border-color:#185FA5}
+.tbl-total{background:#F7F9FC;font-weight:700}
+.tbl-grand{background:#EBF3FB;font-weight:700;color:#185FA5}
+/* SECTION HEADERS */
+.sec-header{display:flex;align-items:center;gap:10px;padding:14px 0 10px;margin-top:8px;border-top:2px solid #e5e5e3}
+.sec-header-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.sec-header-icon.labor{background:#FFF0DC;color:#8A5000}
+.sec-header-icon.material{background:#EAF3DE;color:#2E6B0A}
+.sec-header-icon.vendor{background:#F0EAFC;color:#6B21A8}
+.sec-header-icon.photos{background:#FDE8E8;color:#B91C1C}
+.sec-header-icon.sig{background:#EBF3FB;color:#185FA5}
+.sec-title{font-size:15px;font-weight:700;color:#1a1a1a}
+.sec-sub{font-size:12px;color:#888;margin-top:1px}
+.add-btn{font-size:12px;color:#185FA5;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:5px 0;background:none;border:none;font-weight:600;margin-top:6px}
+.add-btn:hover{color:#0C447C}
+/* BREADCRUMB */
+.breadcrumb{font-size:12px;color:#aaa;margin-bottom:18px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.breadcrumb .bc-link{cursor:pointer;color:#888}
+.breadcrumb .bc-link:hover{color:#185FA5}
+.breadcrumb .bc-sep{color:#ccc}
+.breadcrumb .bc-current{color:#1a1a1a;font-weight:600}
+/* NOTICE */
+.notice{border-radius:8px;padding:10px 14px;font-size:12px;display:flex;align-items:flex-start;gap:9px;margin-bottom:16px}
+.notice-info{background:#EBF3FB;border:1px solid #C5DEFA;color:#185FA5}
+.notice-warn{background:#FFF8EC;border:1px solid #FCDFA6;color:#8A5000}
+/* AVATAR */
+.av{width:34px;height:34px;border-radius:50%;background:#EBF3FB;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#185FA5;flex-shrink:0}
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;width:520px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.modal-title{font-size:16px;font-weight:700}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #f0f0ee}
+/* PHOTO UPLOAD */
+.photo-box{border:2px dashed #d5d5d3;border-radius:10px;padding:20px;text-align:center;cursor:pointer;color:#888;font-size:13px;transition:border 0.1s}
+.photo-box:hover{border-color:#185FA5;color:#185FA5}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.photo-thumb{border-radius:8px;background:#f0f0ee;height:80px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;position:relative;overflow:hidden}
+/* GRAND TOTAL BOX */
+.grand-box{background:#EBF3FB;border:1px solid #C5DEFA;border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-top:16px}
+.grand-label{font-size:14px;font-weight:600;color:#185FA5}
+.grand-value{font-size:24px;font-weight:800;color:#185FA5}
+/* SIG BLOCK */
+.sig-block{background:#f8f8f6;border:1px solid #e5e5e3;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.sig-info{flex:1}
+.sig-name{font-size:13px;font-weight:600}
+.sig-role{font-size:11px;color:#888}
+/* PACKAGE SUMMARY */
+.pkg-stat{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.pkg-stat-item{background:#f8f8f6;border-radius:8px;padding:11px 14px}
+.pkg-stat-label{font-size:11px;color:#888;margin-bottom:3px}
+.pkg-stat-val{font-size:15px;font-weight:700}
+/* TICKET LIST */
+.ticket-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0ee;gap:12px;cursor:pointer}
+.ticket-row:last-child{border-bottom:none}
+.ticket-row:hover .row-title{color:#185FA5}
+/* TABS */
+.tabs{display:flex;gap:2px;background:#f0f0ee;border-radius:10px;padding:3px;margin-bottom:20px}
+.tab{flex:1;text-align:center;padding:7px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:500;color:#666;transition:all 0.1s}
+.tab.active{background:#fff;color:#185FA5;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,0.1)}
+/* PREVIEW */
+.preview-page{background:#fff;border:1px solid #d5d5d3;border-radius:4px;padding:40px;margin-bottom:20px;font-size:12px;line-height:1.6;max-width:700px}
+.preview-header{border-bottom:3px solid #185FA5;padding-bottom:12px;margin-bottom:16px}
+.preview-title{font-size:18px;font-weight:800;color:#185FA5}
+.preview-sub{font-size:12px;color:#888;margin-top:4px}
+.preview-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;margin-bottom:14px}
+.preview-meta-item{background:#f8f8f6;padding:6px 10px;border-radius:4px}
+.preview-meta-label{font-weight:700;color:#555}
+.preview-section-title{font-size:13px;font-weight:800;color:#185FA5;border-bottom:1px solid #e5e5e3;padding-bottom:4px;margin:14px 0 8px}
+.preview-tbl{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:8px}
+.preview-tbl th{background:#185FA5;color:#fff;padding:5px 8px;text-align:left;font-weight:700}
+.preview-tbl td{padding:5px 8px;border-bottom:1px solid #f0f0ee}
+.preview-tbl tr:last-child td{border-bottom:none}
+.preview-total{background:#EBF3FB;font-weight:700;color:#185FA5}
+.preview-grand{background:#185FA5;color:#fff;font-weight:800;font-size:13px}
+.preview-grand td{padding:8px}
+.sig-preview{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
+.sig-line{border-top:1px solid #1a1a1a;padding-top:6px;font-size:10px;color:#555}
+</style>
+</head>
+<body>
+
+<!-- MODALS -->
+<div class="modal-bg" id="modal-company">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="modal-company-title">Add company</div><button class="btn btn-icon" onclick="closeModal('modal-company')"><i class="ti ti-x"></i></button></div>
+    <div class="form-grid form-grid-2">
+      <div class="form-group" style="grid-column:span 2"><label class="form-label">Company name</label><input class="form-input" id="co-name" placeholder="e.g. Apex Construction Group"></div>
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="co-phone" placeholder="(555) 000-0000"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="co-email" placeholder="contact@company.com"></div>
+      <div class="form-group" style="grid-column:span 2"><label class="form-label">Address</label><input class="form-input" id="co-address" placeholder="Street address, City, State, ZIP"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-company')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCompany()"><i class="ti ti-check"></i> Save company</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-contact">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add contact</div><button class="btn btn-icon" onclick="closeModal('modal-contact')"><i class="ti ti-x"></i></button></div>
+    <div id="contact-company-select-wrap" class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Company</label>
+      <select class="form-input" id="contact-company-id"></select>
+    </div>
+    <div class="form-grid form-grid-2">
+      <div class="form-group"><label class="form-label">First name</label><input class="form-input" id="contact-first" placeholder="First"></div>
+      <div class="form-group"><label class="form-label">Last name</label><input class="form-input" id="contact-last" placeholder="Last"></div>
+      <div class="form-group"><label class="form-label">Title / role</label><input class="form-input" id="contact-title" placeholder="e.g. Superintendent"></div>
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="contact-phone" placeholder="(555) 000-0000"></div>
+      <div class="form-group" style="grid-column:span 2"><label class="form-label">Email</label><input class="form-input" id="contact-email" placeholder="name@company.com"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-contact')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveContact()"><i class="ti ti-check"></i> Save contact</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-classification">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="modal-class-title">Add classification</div><button class="btn btn-icon" onclick="closeModal('modal-classification')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="edit-class-idx" value="">
+    <div class="form-grid form-grid-2">
+      <div class="form-group" style="grid-column:span 2"><label class="form-label">Classification name</label><input class="form-input" id="class-name" placeholder="e.g. Foreman, Electrician, Laborer"></div>
+      <div class="form-group"><label class="form-label">Regular rate ($/hr)</label><input class="form-input" id="class-rate" type="number" placeholder="0.00" min="0" step="0.01"></div>
+      <div class="form-group"><label class="form-label">OH&P %</label><input class="form-input" id="class-ohp" type="number" placeholder="10" min="0" max="100"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-classification')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveClassification()"><i class="ti ti-check"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-worker">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="modal-worker-title">Add worker</div><button class="btn btn-icon" onclick="closeModal('modal-worker')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="edit-worker-idx" value="">
+    <div class="form-grid form-grid-2">
+      <div class="form-group"><label class="form-label">First name</label><input class="form-input" id="worker-first" placeholder="First"></div>
+      <div class="form-group"><label class="form-label">Last name</label><input class="form-input" id="worker-last" placeholder="Last"></div>
+      <div class="form-group" style="grid-column:span 2"><label class="form-label">Classification</label><select class="form-input" id="worker-class"></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-worker')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveWorker()"><i class="ti ti-check"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-super">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add superintendent</div><button class="btn btn-icon" onclick="closeModal('modal-super')"><i class="ti ti-x"></i></button></div>
+    <div class="tabs" style="margin-bottom:16px">
+      <div class="tab active" id="tab-from-dir" onclick="switchSuperTab('dir')">From directory</div>
+      <div class="tab" id="tab-new-super" onclick="switchSuperTab('new')">Add new</div>
+    </div>
+    <div id="super-from-dir">
+      <div id="dir-contacts-list" style="max-height:260px;overflow-y:auto"></div>
+    </div>
+    <div id="super-new-form" style="display:none">
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">First name</label><input class="form-input" id="super-first" placeholder="First"></div>
+        <div class="form-group"><label class="form-label">Last name</label><input class="form-input" id="super-last" placeholder="Last"></div>
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="super-phone" placeholder="(555) 000-0000"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="super-email" placeholder="name@company.com"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-super')">Cancel</button>
+      <button class="btn btn-primary" id="super-save-btn" onclick="saveSuper()"><i class="ti ti-check"></i> Add to job</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-new-package">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">New T&M package</div><button class="btn btn-icon" onclick="closeModal('modal-new-package')"><i class="ti ti-x"></i></button></div>
+    <div class="form-group" style="margin-bottom:14px"><label class="form-label">Package title</label><input class="form-input" id="pkg-title" placeholder="e.g. Power to BAS control panel — Mech Room 1"></div>
+    <div class="form-grid form-grid-2">
+      <div class="form-group"><label class="form-label">Authorization type</label>
+        <select class="form-input" id="pkg-auth-type">
+          <option>GC email authorization</option>
+          <option>CE reference number</option>
+          <option>RFI response</option>
+          <option>Verbal direction follow-up</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Reference # (optional)</label><input class="form-input" id="pkg-auth-ref" placeholder="e.g. CE-047"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Upload authorization document (optional)</label><input type="file" class="form-input" id="pkg-auth-file" accept=".pdf,.jpg,.png,.doc,.docx"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-new-package')">Cancel</button>
+      <button class="btn btn-primary" onclick="createPackage()"><i class="ti ti-plus"></i> Create package</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-new-job">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">New job</div><button class="btn btn-icon" onclick="closeModal('modal-new-job')"><i class="ti ti-x"></i></button></div>
+    <div class="form-grid form-grid-2">
+      <div class="form-group"><label class="form-label">Job number</label><input class="form-input" id="new-job-num" placeholder="e.g. 2024-042"></div>
+      <div class="form-group"><label class="form-label">Job description</label><input class="form-input" id="new-job-desc" placeholder="e.g. Downtown Hotel — Plumbing"></div>
+      <div class="form-group"><label class="form-label">General contractor</label><input class="form-input" id="new-job-gc" placeholder="GC company name"></div>
+      <div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="new-job-owner" placeholder="Owner name"></div>
+      <div class="form-group" style="grid-column:span 2"><label class="form-label">Architect / engineer</label><input class="form-input" id="new-job-ae" placeholder="Architect or engineer of record"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-new-job')">Cancel</button>
+      <button class="btn btn-primary" onclick="createJob()"><i class="ti ti-plus"></i> Create job</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app">
+  <div class="sidebar">
+    <div class="logo"><div class="logo-text">FieldTicket</div><div class="logo-sub">T&M Management</div></div>
+    <div class="nav">
+      <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+      <div class="nav-item" id="nav-jobs" onclick="showPage('jobs')"><i class="ti ti-building"></i> Jobs</div>
+      <div class="nav-sep"></div>
+      <div class="nav-item" id="nav-directory" onclick="showPage('directory')"><i class="ti ti-address-book"></i> Directory</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" id="topbar-action" onclick="openModal('modal-new-job')" style="display:none"><i class="ti ti-plus"></i> <span id="topbar-action-label">New job</span></button>
+        <div class="av" style="cursor:default">JS</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="metrics" id="dash-metrics"></div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Active jobs</div><button class="btn btn-primary btn-sm" onclick="openModal('modal-new-job')"><i class="ti ti-plus"></i> New job</button></div>
+          <div id="dash-jobs-list"></div>
+        </div>
+      </div>
+
+      <!-- JOBS -->
+      <div class="page" id="page-jobs">
+        <div class="card">
+          <div class="card-header"><div class="card-title">All jobs</div><button class="btn btn-primary btn-sm" onclick="openModal('modal-new-job')"><i class="ti ti-plus"></i> New job</button></div>
+          <div id="jobs-list"></div>
+        </div>
+      </div>
+
+      <!-- JOB DETAIL -->
+      <div class="page" id="page-job-detail">
+        <div class="breadcrumb" id="bc-job-detail"></div>
+        <div class="pkg-stat" id="job-detail-stats"></div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title" id="job-detail-title"></div><div class="card-subtitle" id="job-detail-sub"></div></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm" onclick="showJobSetup()"><i class="ti ti-settings"></i> Setup</button>
+              <button class="btn btn-primary btn-sm" onclick="openModal('modal-new-package')"><i class="ti ti-plus"></i> New package</button>
+            </div>
+          </div>
+          <div id="packages-list"></div>
+        </div>
+      </div>
+
+      <!-- JOB SETUP -->
+      <div class="page" id="page-job-setup">
+        <div class="breadcrumb" id="bc-job-setup"></div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Job information</div></div>
+          <div class="form-grid form-grid-2">
+            <div class="form-group"><label class="form-label">Job number</label><input class="form-input" id="setup-job-num"></div>
+            <div class="form-group"><label class="form-label">Job description</label><input class="form-input" id="setup-job-desc"></div>
+            <div class="form-group"><label class="form-label">General contractor</label><input class="form-input" id="setup-job-gc"></div>
+            <div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="setup-job-owner"></div>
+            <div class="form-group" style="grid-column:span 2"><label class="form-label">Architect / engineer</label><input class="form-input" id="setup-job-ae"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Superintendents</div><button class="btn btn-sm" onclick="openSuperModal()"><i class="ti ti-plus"></i> Add superintendent</button></div>
+          <div id="setup-supers-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Labor classifications &amp; rates</div><button class="btn btn-sm" onclick="openClassModal()"><i class="ti ti-plus"></i> Add classification</button></div>
+          <div class="tbl-wrap"><table class="tbl" id="setup-class-table">
+            <thead><tr><th>Classification</th><th>Regular rate</th><th>OT (1.5x)</th><th>DT (2x)</th><th>OH&P %</th><th style="width:60px"></th></tr></thead>
+            <tbody id="setup-class-body"></tbody>
+          </table></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Personnel roster</div><button class="btn btn-sm" onclick="openWorkerModal()"><i class="ti ti-plus"></i> Add worker</button></div>
+          <div id="setup-workers-list"></div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+          <button class="btn" onclick="showPage('job-detail');renderJobDetail()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveJobSetup()"><i class="ti ti-check"></i> Save job setup</button>
+        </div>
+      </div>
+
+      <!-- PACKAGE DETAIL -->
+      <div class="page" id="page-package-detail">
+        <div class="breadcrumb" id="bc-pkg-detail"></div>
+        <div class="pkg-stat" id="pkg-detail-stats"></div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title" id="pkg-detail-title"></div><div class="card-subtitle" id="pkg-detail-sub"></div></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm" onclick="showPage('package-preview')"><i class="ti ti-eye"></i> Preview package</button>
+              <button class="btn btn-primary btn-sm" onclick="addTicketToPackage()"><i class="ti ti-plus"></i> Add ticket</button>
+            </div>
+          </div>
+          <div id="tickets-list"></div>
+        </div>
+      </div>
+
+      <!-- TICKET EDITOR -->
+      <div class="page" id="page-ticket-editor">
+        <div class="breadcrumb" id="bc-ticket"></div>
+        <div id="ticket-editor-content"></div>
+      </div>
+
+      <!-- PACKAGE PREVIEW -->
+      <div class="page" id="page-package-preview">
+        <div class="breadcrumb" id="bc-preview"></div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+          <div style="flex:1;font-size:14px;font-weight:600">Package preview — how it will look when compiled</div>
+          <button class="btn btn-sm" onclick="showPage('package-detail')"><i class="ti ti-arrow-left"></i> Back</button>
+        </div>
+        <div id="preview-content"></div>
+      </div>
+
+      <!-- DIRECTORY -->
+      <div class="page" id="page-directory">
+        <div class="tabs">
+          <div class="tab active" id="dir-tab-companies" onclick="switchDirTab('companies')">Companies</div>
+          <div class="tab" id="dir-tab-contacts" onclick="switchDirTab('contacts')">Contacts</div>
+        </div>
+        <div id="dir-companies-view">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Companies</div><button class="btn btn-primary btn-sm" onclick="openModal('modal-company')"><i class="ti ti-plus"></i> Add company</button></div>
+            <div id="dir-companies-list"></div>
+          </div>
+        </div>
+        <div id="dir-contacts-view" style="display:none">
+          <div class="card">
+            <div class="card-header"><div class="card-title">All contacts</div><button class="btn btn-primary btn-sm" onclick="openAddContactModal()"><i class="ti ti-plus"></i> Add contact</button></div>
+            <div id="dir-contacts-full-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== STATE =====================
+const state = {
+  jobs: [
+    {id:'j1',num:'2024-041',desc:'Riverside Trade School — Electrical',gc:'Apex Construction Group',owner:'Riverside School District',ae:'Davies & Holt Architecture',
+     supers:[{id:'s1',name:'R. Kowalski',email:'rkowalski@apexcg.com',phone:'(215) 555-0134'},{id:'s2',name:'T. Brandt',email:'tbrandt@apexcg.com',phone:'(215) 555-0187'}],
+     classifications:[{name:'Foreman',rate:95,ohp:10},{name:'Electrician',rate:75,ohp:10},{name:'Laborer',rate:55,ohp:10}],
+     workers:[{id:'w1',first:'Mike',last:'Torres',cls:'Foreman'},{id:'w2',first:'Dan',last:'Reyes',cls:'Electrician'},{id:'w3',first:'Chris',last:'Walsh',cls:'Laborer'}],
+     packages:[
+       {id:'p1',num:'TM-001',title:'Power to BAS control panel — Mech Room 1',authType:'CE reference number',authRef:'CE-047',authFile:null,
+        tickets:[
+          {id:'t1',num:'TM-001.1',date:'2024-10-07',desc:'Ran conduit from panel room to BAS unit location, installed junction boxes.',labor:[{worker:'Mike Torres',cls:'Foreman',reg:8,ot:0,dt:0,rate:95}],materials:[{desc:'EMT conduit 3/4"',unit:'Linear ft',qty:40,rate:3.50,invoiceRef:'INV-001'}],vendors:[],photos:[],foreman:'Mike Torres',super:'R. Kowalski',status:'signed'},
+          {id:'t2',num:'TM-001.2',date:'2024-10-08',desc:'Pulled wire and terminated connections at BAS control panel.',labor:[{worker:'Dan Reyes',cls:'Electrician',reg:8,ot:2,dt:0,rate:75}],materials:[{desc:'12/2 wire',unit:'Linear ft',qty:60,rate:1.80,invoiceRef:'INV-001'}],vendors:[],photos:[],foreman:'Dan Reyes',super:'R. Kowalski',status:'signed'}
+        ]},
+       {id:'p2',num:'TM-002',title:'Additional conduit runs — Level 3 corridor',authType:'RFI response',authRef:'RFI-022',authFile:null,tickets:[
+         {id:'t3',num:'TM-002.1',date:'2024-10-14',desc:'Installed additional conduit runs per RFI-022 response.',labor:[{worker:'Dan Reyes',cls:'Electrician',reg:8,ot:0,dt:0,rate:75}],materials:[],vendors:[],photos:[],foreman:'Dan Reyes',super:'R. Kowalski',status:'draft'}
+       ]},
+       {id:'p3',num:'TM-003',title:'Lighting modifications — Cosmetology wing',authType:'GC email authorization',authRef:'',authFile:null,tickets:[
+         {id:'t4',num:'TM-003.1',date:'2024-10-18',desc:'Relocated lighting fixtures per owner request in cosmetology area.',labor:[{worker:'Mike Torres',cls:'Foreman',reg:8,ot:0,dt:0,rate:95},{worker:'Dan Reyes',cls:'Electrician',reg:8,ot:0,dt:0,rate:75}],materials:[{desc:'4" LED fixture',unit:'Each',qty:6,rate:45,invoiceRef:'INV-002'}],vendors:[],photos:[],foreman:'Mike Torres',super:'R. Kowalski',status:'pending-sig'}
+       ]}
+     ]},
+    {id:'j2',num:'2024-038',desc:'Harbor View Office Complex — MEP',gc:'Summit GC Partners',owner:'Harbor Realty LLC',ae:'Smith Engineering',supers:[],classifications:[{name:'Foreman',rate:90,ohp:10},{name:'Plumber',rate:70,ohp:10}],workers:[],packages:[
+      {id:'p4',num:'TM-001',title:'Reroute drain lines Level 2',authType:'GC email authorization',authRef:'',authFile:null,tickets:[
+        {id:'t5',num:'TM-001.1',date:'2024-10-20',desc:'Rerouted drain lines per architect field directive.',labor:[{worker:'',cls:'Foreman',reg:8,ot:0,dt:0,rate:90}],materials:[],vendors:[],photos:[],foreman:'',super:'',status:'draft'}
+      ]}
+    ]}
+  ],
+  directory: {
+    companies: [
+      {id:'c1',name:'Apex Construction Group',phone:'(215) 555-0100',email:'info@apexcg.com',address:'1200 Market St, Philadelphia, PA 19107'},
+      {id:'c2',name:'Summit GC Partners',phone:'(215) 555-0200',email:'info@summitgc.com',address:'450 N 3rd St, Philadelphia, PA 19123'}
+    ],
+    contacts: [
+      {id:'ct1',companyId:'c1',first:'R.',last:'Kowalski',title:'MEP Superintendent',phone:'(215) 555-0134',email:'rkowalski@apexcg.com'},
+      {id:'ct2',companyId:'c1',first:'T.',last:'Brandt',title:'Carpentry Superintendent',phone:'(215) 555-0187',email:'tbrandt@apexcg.com'},
+      {id:'ct3',companyId:'c2',first:'J.',last:'Martinez',title:'Project Superintendent',phone:'(215) 555-0221',email:'jmartinez@summitgc.com'}
+    ]
+  },
+  currentJobId: null,
+  currentPkgId: null,
+  currentTicketId: null,
+  selectedSuperFromDir: null
+};
+
+// ===================== HELPERS =====================
+function genId(){return 'id_'+Math.random().toString(36).substr(2,9)}
+function getJob(id){return state.jobs.find(j=>j.id===id)}
+function getPkg(job,id){return job.packages.find(p=>p.id===id)}
+function getTicket(pkg,id){return pkg.tickets.find(t=>t.id===id)}
+function currJob(){return getJob(state.currentJobId)}
+function currPkg(){const j=currJob();return j?getPkg(j,state.currentPkgId):null}
+
+function calcTicketTotals(ticket,job){
+  let laborSub=0;
+  ticket.labor.forEach(r=>{
+    const cls=job.classifications.find(c=>c.name===r.cls);
+    const ohpPct=cls?(cls.ohp/100):0.10;
+    const base=r.reg*r.rate+r.ot*r.rate*1.5+r.dt*r.rate*2;
+    laborSub+=base*(1+ohpPct);
+  });
+  let matSub=0;
+  ticket.materials.forEach(r=>{matSub+=r.qty*r.rate;});
+  matSub*=1.15;
+  let vendorSub=0;
+  ticket.vendors.forEach(r=>{vendorSub+=r.amount*(1+(r.markup/100));});
+  return{labor:laborSub,material:matSub,vendor:vendorSub,total:laborSub+matSub+vendorSub};
+}
+
+function pkgExecutedValue(pkg,job){
+  return pkg.tickets.filter(t=>t.status==='signed').reduce((s,t)=>s+calcTicketTotals(t,job).total,0);
+}
+
+function pkgTotalValue(pkg,job){
+  return pkg.tickets.reduce((s,t)=>s+calcTicketTotals(t,job).total,0);
+}
+
+function pkgStatus(pkg){
+  const statuses=pkg.tickets.map(t=>t.status);
+  if(statuses.every(s=>s==='signed'))return{label:'All signed',cls:'badge-success'};
+  if(statuses.some(s=>s==='pending-sig'))return{label:'Awaiting signature',cls:'badge-warning'};
+  if(statuses.some(s=>s==='submitted'))return{label:'Submitted to GC',cls:'badge-info'};
+  return{label:'In progress',cls:'badge-gray'};
+}
+
+function fmt(n){return'$'+n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
+function initials(name){return name.split(' ').map(w=>w[0]).join('').toUpperCase().substr(0,2)}
+
+// ===================== NAVIGATION =====================
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const el=document.getElementById('page-'+id);
+  if(el)el.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const navMap={dashboard:'nav-dashboard',jobs:'nav-jobs','job-detail':'nav-jobs','job-setup':'nav-jobs','package-detail':'nav-jobs','ticket-editor':'nav-jobs','package-preview':'nav-jobs',directory:'nav-directory'};
+  const navId=navMap[id];
+  if(navId){const n=document.getElementById(navId);if(n)n.classList.add('active');}
+  const titles={dashboard:'Dashboard',jobs:'Jobs',directory:'Directory','job-detail':'Job detail','job-setup':'Job setup','package-detail':'T&M package','ticket-editor':'T&M ticket','package-preview':'Package preview'};
+  document.getElementById('page-title').textContent=titles[id]||id;
+  if(id==='dashboard')renderDashboard();
+  if(id==='jobs')renderJobs();
+  if(id==='directory')renderDirectory();
+}
+
+// ===================== DASHBOARD =====================
+function renderDashboard(){
+  const totalJobs=state.jobs.length;
+  let pendingVal=0,executedVal=0,openPkgs=0;
+  state.jobs.forEach(j=>{
+    j.packages.forEach(p=>{
+      const tv=pkgTotalValue(p,j);
+      const ev=pkgExecutedValue(p,j);
+      executedVal+=ev;
+      if(p.tickets.some(t=>t.status!=='signed'))openPkgs++;
+    });
+  });
+  document.getElementById('dash-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Active jobs</div><div class="metric-value">${totalJobs}</div><div class="metric-sub">${openPkgs} with open packages</div></div>
+    <div class="metric"><div class="metric-label">Open packages</div><div class="metric-value">${openPkgs}</div><div class="metric-sub">Across all jobs</div></div>
+    <div class="metric"><div class="metric-label">Executed value</div><div class="metric-value">${fmt(executedVal)}</div><div class="metric-sub">Fully signed tickets</div></div>
+    <div class="metric"><div class="metric-label">Total jobs</div><div class="metric-value">${totalJobs}</div><div class="metric-sub">All time</div></div>`;
+  const list=document.getElementById('dash-jobs-list');
+  list.innerHTML=state.jobs.map(j=>{
+    const ev=j.packages.reduce((s,p)=>s+pkgExecutedValue(p,j),0);
+    const openP=j.packages.filter(p=>p.tickets.some(t=>t.status!=='signed')).length;
+    const totalP=j.packages.length;
+    return`<div class="list-row" onclick="openJob('${j.id}')">
+      <div class="row-icon">${j.num.split('-')[1]||j.num.substr(0,2)}</div>
+      <div class="row-body"><div class="row-title">${j.desc}</div><div class="row-sub">${j.gc}</div></div>
+      <div class="row-right"><div class="row-amount">${fmt(ev)}</div><div class="row-meta">${openP} open · ${totalP} pkg</div></div>
+    </div>`;
+  }).join('');
+}
+
+// ===================== JOBS =====================
+function renderJobs(){
+  document.getElementById('jobs-list').innerHTML=state.jobs.map(j=>{
+    const ev=j.packages.reduce((s,p)=>s+pkgExecutedValue(p,j),0);
+    return`<div class="list-row" onclick="openJob('${j.id}')">
+      <div class="row-icon">${j.num.split('-')[1]||j.num.substr(0,2)}</div>
+      <div class="row-body"><div class="row-title">${j.num} — ${j.desc}</div><div class="row-sub">${j.gc} · ${j.packages.length} packages</div></div>
+      <div class="row-right"><div class="row-amount">${fmt(ev)}</div><div class="row-meta">Executed</div></div>
+    </div>`;
+  }).join('')||'<div style="color:#aaa;padding:16px;font-size:13px">No jobs yet. Create your first job.</div>';
+}
+
+function openJob(id){
+  state.currentJobId=id;
+  renderJobDetail();
+  showPage('job-detail');
+}
+
+function renderJobDetail(){
+  const j=currJob();if(!j)return;
+  document.getElementById('bc-job-detail').innerHTML=`<span class="bc-link" onclick="showPage('jobs')">Jobs</span><span class="bc-sep">›</span><span class="bc-current">${j.num} — ${j.desc}</span>`;
+  document.getElementById('job-detail-title').textContent=j.num+' — '+j.desc;
+  document.getElementById('job-detail-sub').textContent=j.gc+' · '+j.owner;
+  const ev=j.packages.reduce((s,p)=>s+pkgExecutedValue(p,j),0);
+  const tv=j.packages.reduce((s,p)=>s+pkgTotalValue(p,j),0);
+  const openP=j.packages.filter(p=>p.tickets.some(t=>t.status!=='signed')).length;
+  document.getElementById('job-detail-stats').innerHTML=`
+    <div class="pkg-stat-item"><div class="pkg-stat-label">Executed value</div><div class="pkg-stat-val">${fmt(ev)}</div></div>
+    <div class="pkg-stat-item"><div class="pkg-stat-label">Total T&M value</div><div class="pkg-stat-val">${fmt(tv)}</div></div>
+    <div class="pkg-stat-item"><div class="pkg-stat-label">Open packages</div><div class="pkg-stat-val">${openP}</div></div>
+    <div class="pkg-stat-item"><div class="pkg-stat-label">Total packages</div><div class="pkg-stat-val">${j.packages.length}</div></div>`;
+  document.getElementById('packages-list').innerHTML=j.packages.map(p=>{
+    const tv=pkgTotalValue(p,j);
+    const ev=pkgExecutedValue(p,j);
+    const st=pkgStatus(p);
+    return`<div class="list-row" onclick="openPackage('${p.id}')">
+      <div class="row-icon" style="background:#FFF0DC;color:#8A5000;font-size:11px">${p.num}</div>
+      <div class="row-body"><div class="row-title">${p.title}</div><div class="row-sub">${p.authType}${p.authRef?' · '+p.authRef:''} · ${p.tickets.length} ticket${p.tickets.length!==1?'s':''}</div></div>
+      <div class="row-right"><div class="row-amount">${fmt(tv)}</div><div class="row-meta">${fmt(ev)} executed</div></div>
+      <span class="badge ${st.cls}">${st.label}</span>
+    </div>`;
+  }).join('')||'<div style="color:#aaa;padding:16px;font-size:13px">No packages yet. Create your first T&M package.</div>';
+}
+
+function openPackage(id){
+  state.currentPkgId=id;
+  renderPackageDetail();
+  showPage('package-detail');
+}
+
+function renderPackageDetail(){
+  const j=currJob();const p=currPkg();if(!j||!p)return;
+  document.getElementById('bc-pkg-detail').innerHTML=`<span class="bc-link" onclick="showPage('jobs')">Jobs</span><span class="bc-sep">›</span><span class="bc-link" onclick="showPage('job-detail');renderJobDetail()">${j.num}</span><span class="bc-sep">›</span><span class="bc-current">${p.num} — ${p.title}</span>`;
+  document.getElementById('pkg-detail-title').textContent=p.num+' — '+p.title;
+  document.getElementById('pkg-detail-sub').textContent=(p.authType+(p.authRef?' · Ref: '+p.authRef:''));
+  const tv=pkgTotalValue(p,j);
+  const ev=pkgExecutedValue(p,j);
+  document.getElementById('pkg-detail-stats').innerHTML=`
+    <div class="pkg-stat-item"><div class="pkg-stat-label">Total value</div><div class="pkg-stat-val">${fmt(tv)}</div></div>
+    <div class="pkg-stat-item"><div class="pkg-stat-label">Executed</div><div class="pkg-stat-val">${fmt(ev)}</div></div>
+    <div class="pkg-stat-item"><div class="pkg-stat-label">Tickets</div><div class="pkg-stat-val">${p.tickets.length}</div></div>
+    <div class="pkg-stat-item"><div class="pkg-stat-label">Status</div><div class="pkg-stat-val" style="font-size:13px"><span class="badge ${pkgStatus(p).cls}">${pkgStatus(p).label}</span></div></div>`;
+  const statusLabel={draft:'Draft',signed:'Signed','pending-sig':'Awaiting sig',submitted:'Submitted'};
+  const statusCls={draft:'badge-gray',signed:'badge-success','pending-sig':'badge-warning',submitted:'badge-info'};
+  document.getElementById('tickets-list').innerHTML=p.tickets.map(t=>{
+    const tot=calcTicketTotals(t,j).total;
+    return`<div class="ticket-row" onclick="openTicket('${t.id}')">
+      <div class="row-icon" style="background:#EAF3DE;color:#2E6B0A;font-size:11px">${t.num}</div>
+      <div class="row-body"><div class="row-title">${t.desc||'(no description)'}</div><div class="row-sub">${t.date} · ${t.labor.length} labor · ${t.materials.length} material</div></div>
+      <div class="row-right"><div class="row-amount">${fmt(tot)}</div></div>
+      <span class="badge ${statusCls[t.status]||'badge-gray'}">${statusLabel[t.status]||t.status}</span>
+    </div>`;
+  }).join('')||'<div style="color:#aaa;padding:16px;font-size:13px">No tickets yet.</div>';
+}
+
+function addTicketToPackage(){
+  const j=currJob();const p=currPkg();if(!j||!p)return;
+  const lastTicket=p.tickets[p.tickets.length-1];
+  const newNum=p.tickets.length+1;
+  const ticketNum=p.num+'.'+newNum;
+  const newTicket={
+    id:genId(),num:ticketNum,date:new Date().toISOString().substr(0,10),
+    desc:lastTicket?lastTicket.desc:'',
+    labor:[],materials:[],vendors:[],photos:[],foreman:'',super:'',status:'draft'
+  };
+  p.tickets.push(newTicket);
+  state.currentTicketId=newTicket.id;
+  renderTicketEditor();
+  showPage('ticket-editor');
+}
+
+function openTicket(id){
+  state.currentTicketId=id;
+  renderTicketEditor();
+  showPage('ticket-editor');
+}
+
+// ===================== TICKET EDITOR =====================
+function renderTicketEditor(){
+  const j=currJob();const p=currPkg();
+  const t=p?getTicket(p,state.currentTicketId):null;
+  if(!j||!p||!t)return;
+
+  document.getElementById('bc-ticket').innerHTML=`<span class="bc-link" onclick="showPage('jobs')">Jobs</span><span class="bc-sep">›</span><span class="bc-link" onclick="showPage('job-detail');renderJobDetail()">${j.num}</span><span class="bc-sep">›</span><span class="bc-link" onclick="showPage('package-detail');renderPackageDetail()">${p.num}</span><span class="bc-sep">›</span><span class="bc-current">${t.num}</span>`;
+
+  const workerOptions=j.workers.map(w=>`<option value="${w.first+' '+w.last}" ${t.foreman===w.first+' '+w.last?'selected':''}>${w.first} ${w.last} (${w.cls})</option>`).join('');
+  const superOptions=j.supers.map(s=>`<option value="${s.name}" ${t.super===s.name?'selected':''}>${s.name}</option>`).join('');
+  const allDescs=[...new Set(p.tickets.filter(tk=>tk.id!==t.id).map(tk=>tk.desc).filter(Boolean))];
+  const descDatalist=allDescs.map(d=>`<option value="${d}">`).join('');
+
+  const laborRows=t.labor.map((r,i)=>renderLaborRow(r,i,j,workerOptions)).join('');
+  const matRows=t.materials.map((r,i)=>renderMatRow(r,i)).join('');
+  const vendorRows=t.vendors.map((r,i)=>renderVendorRow(r,i)).join('');
+
+  const tots=calcTicketTotals(t,j);
+
+  document.getElementById('ticket-editor-content').innerHTML=`
+  <div class="card">
+    <div class="form-grid form-grid-2" style="margin-bottom:0">
+      <div class="form-group"><label class="form-label">Ticket number</label><input class="form-input" value="${t.num}" onchange="updateTicketField('num',this.value)"></div>
+      <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" value="${t.date}" onchange="updateTicketField('date',this.value)"></div>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label class="form-label">Description of work</label>
+      <datalist id="desc-suggestions">${descDatalist}</datalist>
+      <div style="display:flex;gap:8px">
+        <input class="form-input" list="desc-suggestions" value="${t.desc}" placeholder="Describe work performed — start typing to see previous descriptions" onchange="updateTicketField('desc',this.value)" style="flex:1" id="desc-input-${t.id}">
+        <button class="btn" onclick="aiImproveDesc('${t.id}')" title="Improve with AI"><i class="ti ti-sparkles"></i> Improve</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LABOR -->
+  <div class="card">
+    <div class="sec-header"><div class="sec-header-icon labor"><i class="ti ti-users"></i></div><div><div class="sec-title">Labor</div><div class="sec-sub">Select workers pre-loaded from job setup — rates auto-fill</div></div></div>
+    <div class="tbl-wrap">
+    <table class="tbl" id="labor-tbl">
+      <thead><tr><th style="min-width:160px">Worker</th><th style="width:75px">Reg hrs</th><th style="width:75px">OT (1.5x)</th><th style="width:75px">DT (2x)</th><th style="width:90px">Rate/hr</th><th style="width:90px">OH&P %</th><th style="width:90px">Total</th><th style="width:36px"></th></tr></thead>
+      <tbody id="labor-body">${laborRows}</tbody>
+      <tfoot>
+        <tr class="tbl-total"><td colspan="6" style="font-size:12px">Labor subtotal (incl. OH&P)</td><td id="labor-sub">${fmt(tots.labor)}</td><td></td></tr>
+      </tfoot>
+    </table>
+    </div>
+    <button class="add-btn" onclick="addLaborRow()"><i class="ti ti-plus"></i> Add worker</button>
+  </div>
+
+  <!-- MATERIALS -->
+  <div class="card">
+    <div class="sec-header"><div class="sec-header-icon material"><i class="ti ti-package"></i></div><div><div class="sec-title">Materials</div><div class="sec-sub">Enter material costs — attach invoices to line items</div></div></div>
+    <div class="tbl-wrap">
+    <table class="tbl" id="mat-tbl">
+      <thead><tr><th>Description</th><th style="width:90px">Unit</th><th style="width:70px">Qty</th><th style="width:90px">Unit rate</th><th style="width:90px">OH&P %</th><th style="width:90px">Total</th><th style="width:110px">Invoice</th><th style="width:36px"></th></tr></thead>
+      <tbody id="mat-body">${matRows}</tbody>
+      <tfoot>
+        <tr class="tbl-total"><td colspan="5" style="font-size:12px">Material subtotal (incl. OH&P)</td><td id="mat-sub">${fmt(tots.material)}</td><td></td><td></td></tr>
+      </tfoot>
+    </table>
+    </div>
+    <button class="add-btn" onclick="addMatRow()"><i class="ti ti-plus"></i> Add material</button>
+  </div>
+
+  <!-- VENDORS -->
+  <div class="card">
+    <div class="sec-header"><div class="sec-header-icon vendor"><i class="ti ti-users-group"></i></div><div><div class="sec-title">Additional subs / vendors</div><div class="sec-sub">Vendor-supplied items — markup typically 2.5%</div></div></div>
+    <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>Vendor / sub name</th><th>Description</th><th style="width:90px">Amount</th><th style="width:90px">Markup %</th><th style="width:90px">Total</th><th style="width:36px"></th></tr></thead>
+      <tbody id="vendor-body">${vendorRows}</tbody>
+      <tfoot>
+        <tr class="tbl-total"><td colspan="4" style="font-size:12px">Vendor subtotal</td><td id="vendor-sub">${fmt(tots.vendor)}</td><td></td></tr>
+      </tfoot>
+    </table>
+    </div>
+    <button class="add-btn" onclick="addVendorRow()"><i class="ti ti-plus"></i> Add vendor / sub</button>
+  </div>
+
+  <!-- PHOTOS -->
+  <div class="card">
+    <div class="sec-header"><div class="sec-header-icon photos"><i class="ti ti-camera"></i></div><div><div class="sec-title">Photo documentation</div><div class="sec-sub">Before/after photos with timestamps — optional but recommended</div></div></div>
+    <div class="photo-box" onclick="document.getElementById('photo-upload').click()"><i class="ti ti-upload" style="font-size:24px;display:block;margin-bottom:6px"></i>Click to upload photos or drag and drop<br><span style="font-size:11px;color:#bbb">JPG, PNG — timestamp will be recorded</span></div>
+    <input type="file" id="photo-upload" multiple accept="image/*" style="display:none" onchange="addPhotos(this)">
+    <div class="photo-grid" id="photo-grid">
+      ${t.photos.map(ph=>`<div class="photo-thumb"><i class="ti ti-photo" style="font-size:20px"></i><div style="font-size:10px;margin-top:4px">${ph.name}</div></div>`).join('')}
+    </div>
+    ${t.photos.length>0?`<div style="font-size:12px;color:#888;margin-top:8px">${t.photos.length} photo${t.photos.length!==1?'s':''} attached</div>`:''}
+  </div>
+
+  <!-- GRAND TOTAL -->
+  <div class="grand-box">
+    <div class="grand-label">Ticket grand total</div>
+    <div class="grand-value" id="grand-total">${fmt(tots.total)}</div>
+  </div>
+
+  <!-- SIGNATURES -->
+  <div class="card" style="margin-top:16px">
+    <div class="sec-header"><div class="sec-header-icon sig"><i class="ti ti-writing"></i></div><div><div class="sec-title">Signatures</div><div class="sec-sub">Foreman signs first — then routes to GC superintendent via DocuSign</div></div></div>
+    <div class="sig-block">
+      <div class="av">${t.foreman?initials(t.foreman):'?'}</div>
+      <div class="sig-info">
+        <div class="sig-name">Foreman signature</div>
+        <div style="margin-top:6px"><select class="form-input" style="max-width:280px" onchange="updateTicketField('foreman',this.value)"><option value="">— Select foreman —</option>${workerOptions}</select></div>
+      </div>
+      <span class="badge badge-warning">Signs first</span>
+    </div>
+    <div class="sig-block">
+      <div class="av">${t.super?initials(t.super):'?'}</div>
+      <div class="sig-info">
+        <div class="sig-name">GC superintendent</div>
+        <div style="margin-top:6px"><select class="form-input" style="max-width:280px" onchange="updateTicketField('super',this.value)"><option value="">— Select superintendent —</option>${superOptions}</select></div>
+      </div>
+      <span class="badge badge-gray">After foreman</span>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn" onclick="showPage('package-detail');renderPackageDetail()">Cancel</button>
+      <button class="btn" onclick="saveDraftTicket()"><i class="ti ti-device-floppy"></i> Save draft</button>
+      <button class="btn btn-primary" onclick="submitTicketForSig()"><i class="ti ti-send"></i> Submit for signature</button>
+    </div>
+  </div>`;
+}
+
+function renderLaborRow(r,i,j,workerOptions){
+  const cls=j.classifications.find(c=>c.name===r.cls);
+  const ohp=cls?cls.ohp:10;
+  const base=r.reg*r.rate+r.ot*r.rate*1.5+r.dt*r.rate*2;
+  const total=base*(1+ohp/100);
+  return`<tr id="lr-${i}">
+    <td><select class="tbl-input" onchange="onWorkerSelect(this,${i})" style="min-width:140px">
+      <option value="">— Select —</option>${workerOptions.replace(`value="${r.worker}"`,`value="${r.worker}" selected`)}
+    </select></td>
+    <td><input class="tbl-input" type="number" value="${r.reg}" min="0" step="0.5" onchange="updateLaborField(${i},'reg',this.value)" style="width:60px"></td>
+    <td><input class="tbl-input" type="number" value="${r.ot}" min="0" step="0.5" onchange="updateLaborField(${i},'ot',this.value)" style="width:60px"></td>
+    <td><input class="tbl-input" type="number" value="${r.dt}" min="0" step="0.5" onchange="updateLaborField(${i},'dt',this.value)" style="width:60px"></td>
+    <td><input class="tbl-input" type="number" value="${r.rate}" min="0" step="0.01" onchange="updateLaborField(${i},'rate',this.value)" style="width:70px"></td>
+    <td><div style="display:flex;align-items:center;gap:4px"><input class="tbl-input" type="number" value="${ohp}" min="0" max="100" step="1" onchange="updateLaborOhp(${i},this.value)" style="width:55px"><span style="font-size:12px;color:#888">%</span></div></td>
+    <td style="font-weight:600" id="lr-tot-${i}">${fmt(total)}</td>
+    <td><button onclick="removeLaborRow(${i})" style="background:none;border:none;cursor:pointer;color:#bbb;padding:4px"><i class="ti ti-x"></i></button></td>
+  </tr>`;
+}
+
+function renderMatRow(r,i){
+  const total=r.qty*r.rate*1.15;
+  return`<tr id="mr-${i}">
+    <td><input class="tbl-input" type="text" value="${r.desc}" placeholder="Material description" onchange="updateMatField(${i},'desc',this.value)" style="min-width:130px"></td>
+    <td><select class="tbl-input" onchange="updateMatField(${i},'unit',this.value)">
+      ${['Linear ft','Each','Lump sum','SF','CY','LB'].map(u=>`<option ${r.unit===u?'selected':''}>${u}</option>`).join('')}
+    </select></td>
+    <td><input class="tbl-input" type="number" value="${r.qty}" min="0" step="0.01" onchange="updateMatField(${i},'qty',this.value)" style="width:60px"></td>
+    <td><input class="tbl-input" type="number" value="${r.rate}" min="0" step="0.01" onchange="updateMatField(${i},'rate',this.value)" style="width:70px"></td>
+    <td><div style="display:flex;align-items:center;gap:4px"><input class="tbl-input" type="number" value="15" min="0" max="100" step="1" onchange="updateMatOhp(${i},this.value)" style="width:55px"><span style="font-size:12px;color:#888">%</span></div></td>
+    <td style="font-weight:600" id="mr-tot-${i}">${fmt(total)}</td>
+    <td><button class="btn btn-sm" onclick="document.getElementById('inv-${i}').click()" style="font-size:11px"><i class="ti ti-paperclip"></i> Attach</button><input type="file" id="inv-${i}" style="display:none" accept=".pdf,.jpg,.png" onchange="attachInvoice(${i},this)"><div id="inv-name-${i}" style="font-size:10px;color:#185FA5;margin-top:3px">${r.invoiceRef||''}</div></td>
+    <td><button onclick="removeMatRow(${i})" style="background:none;border:none;cursor:pointer;color:#bbb;padding:4px"><i class="ti ti-x"></i></button></td>
+  </tr>`;
+}
+
+function renderVendorRow(r,i){
+  const total=r.amount*(1+(r.markup/100));
+  return`<tr id="vr-${i}">
+    <td><input class="tbl-input" type="text" value="${r.name}" placeholder="Vendor name" onchange="updateVendorField(${i},'name',this.value)" style="min-width:120px"></td>
+    <td><input class="tbl-input" type="text" value="${r.desc}" placeholder="Description" onchange="updateVendorField(${i},'desc',this.value)" style="min-width:120px"></td>
+    <td><input class="tbl-input" type="number" value="${r.amount}" min="0" step="0.01" onchange="updateVendorField(${i},'amount',this.value)" style="width:80px"></td>
+    <td><div style="display:flex;align-items:center;gap:4px"><input class="tbl-input" type="number" value="${r.markup}" min="0" max="100" step="0.5" onchange="updateVendorField(${i},'markup',this.value)" style="width:55px"><span style="font-size:12px;color:#888">%</span></div></td>
+    <td style="font-weight:600" id="vr-tot-${i}">${fmt(total)}</td>
+    <td><button onclick="removeVendorRow(${i})" style="background:none;border:none;cursor:pointer;color:#bbb;padding:4px"><i class="ti ti-x"></i></button></td>
+  </tr>`;
+}
+
+// ===================== TICKET FIELD UPDATES =====================
+function getTicketRef(){const j=currJob();const p=currPkg();return p?getTicket(p,state.currentTicketId):null;}
+
+function updateTicketField(field,val){const t=getTicketRef();if(t)t[field]=val;recalcTotals();}
+
+function onWorkerSelect(sel,i){
+  const j=currJob();const t=getTicketRef();if(!t||!j)return;
+  const val=sel.value;
+  if(!val){if(t.labor[i])t.labor[i].worker='';return;}
+  const parts=val.match(/^(.+)\((.+)\)$/);
+  if(parts){
+    const wname=parts[1].trim();
+    const wcls=parts[2].trim();
+    const cls=j.classifications.find(c=>c.name===wcls);
+    if(t.labor[i]){t.labor[i].worker=wname;t.labor[i].cls=wcls;t.labor[i].rate=cls?cls.rate:0;}
+    const row=sel.closest('tr');
+    if(row){
+      const rateInput=row.querySelectorAll('input[type=number]')[3];
+      if(rateInput)rateInput.value=cls?cls.rate:0;
+    }
+  }
+  recalcTotals();
+}
+
+function updateLaborField(i,field,val){const t=getTicketRef();if(t&&t.labor[i])t.labor[i][field]=parseFloat(val)||0;recalcTotals();}
+function updateLaborOhp(i,val){
+  const j=currJob();const t=getTicketRef();if(!t||!j)return;
+  const cls=j.classifications.find(c=>c.name===t.labor[i]?.cls);
+  if(cls)cls.ohp=parseFloat(val)||0;
+  recalcTotals();
+}
+function updateMatField(i,field,val){const t=getTicketRef();if(t&&t.materials[i])t.materials[i][field]=field==='qty'||field==='rate'?parseFloat(val)||0:val;recalcTotals();}
+function updateMatOhp(i,val){recalcTotals();}
+function updateVendorField(i,field,val){const t=getTicketRef();if(t&&t.vendors[i])t.vendors[i][field]=field==='amount'||field==='markup'?parseFloat(val)||0:val;recalcTotals();}
+
+function recalcTotals(){
+  const j=currJob();const t=getTicketRef();if(!j||!t)return;
+  let laborSub=0;
+  const lRows=document.querySelectorAll('#labor-body tr');
+  lRows.forEach((row,i)=>{
+    if(!t.labor[i])return;
+    const inputs=row.querySelectorAll('input[type=number]');
+    const reg=parseFloat(inputs[0]?.value)||0;
+    const ot=parseFloat(inputs[1]?.value)||0;
+    const dt=parseFloat(inputs[2]?.value)||0;
+    const rate=parseFloat(inputs[3]?.value)||0;
+    const ohpInput=row.querySelector('td:nth-child(6) input');
+    const ohp=(parseFloat(ohpInput?.value)||0)/100;
+    const base=reg*rate+ot*rate*1.5+dt*rate*2;
+    const total=base*(1+ohp);
+    laborSub+=total;
+    const td=document.getElementById('lr-tot-'+i);
+    if(td)td.textContent=fmt(total);
+  });
+  let matSub=0;
+  const mRows=document.querySelectorAll('#mat-body tr');
+  mRows.forEach((row,i)=>{
+    if(!t.materials[i])return;
+    const inputs=row.querySelectorAll('input[type=number]');
+    const qty=parseFloat(inputs[0]?.value)||0;
+    const rate=parseFloat(inputs[1]?.value)||0;
+    const ohpInput=row.querySelector('td:nth-child(5) input');
+    const ohp=(parseFloat(ohpInput?.value)||0)/100;
+    const total=qty*rate*(1+ohp);
+    matSub+=total;
+    const td=document.getElementById('mr-tot-'+i);
+    if(td)td.textContent=fmt(total);
+  });
+  let vendorSub=0;
+  const vRows=document.querySelectorAll('#vendor-body tr');
+  vRows.forEach((row,i)=>{
+    if(!t.vendors[i])return;
+    const amtInput=row.querySelector('td:nth-child(3) input');
+    const mkpInput=row.querySelector('td:nth-child(4) input');
+    const amt=parseFloat(amtInput?.value)||0;
+    const mkp=(parseFloat(mkpInput?.value)||0)/100;
+    const total=amt*(1+mkp);
+    vendorSub+=total;
+    const td=document.getElementById('vr-tot-'+i);
+    if(td)td.textContent=fmt(total);
+  });
+  const ls=document.getElementById('labor-sub');if(ls)ls.textContent=fmt(laborSub);
+  const ms=document.getElementById('mat-sub');if(ms)ms.textContent=fmt(matSub);
+  const vs=document.getElementById('vendor-sub');if(vs)vs.textContent=fmt(vendorSub);
+  const gt=document.getElementById('grand-total');if(gt)gt.textContent=fmt(laborSub+matSub+vendorSub);
+}
+
+function addLaborRow(){
+  const j=currJob();const t=getTicketRef();if(!j||!t)return;
+  t.labor.push({worker:'',cls:'',reg:0,ot:0,dt:0,rate:0});
+  renderTicketEditor();
+}
+function removeLaborRow(i){const t=getTicketRef();if(t){t.labor.splice(i,1);renderTicketEditor();}}
+function addMatRow(){const t=getTicketRef();if(!t)return;t.materials.push({desc:'',unit:'Each',qty:0,rate:0,invoiceRef:''});renderTicketEditor();}
+function removeMatRow(i){const t=getTicketRef();if(t){t.materials.splice(i,1);renderTicketEditor();}}
+function addVendorRow(){const t=getTicketRef();if(!t)return;t.vendors.push({name:'',desc:'',amount:0,markup:2.5});renderTicketEditor();}
+function removeVendorRow(i){const t=getTicketRef();if(t){t.vendors.splice(i,1);renderTicketEditor();}}
+
+function addPhotos(input){
+  const t=getTicketRef();if(!t)return;
+  Array.from(input.files).forEach(f=>{t.photos.push({name:f.name,date:new Date().toLocaleDateString()});});
+  renderTicketEditor();
+}
+
+function attachInvoice(i,input){
+  const t=getTicketRef();if(!t||!t.materials[i])return;
+  const f=input.files[0];if(!f)return;
+  t.materials[i].invoiceRef=f.name;
+  const div=document.getElementById('inv-name-'+i);
+  if(div)div.textContent=f.name;
+}
+
+function saveDraftTicket(){
+  const t=getTicketRef();if(!t)return;
+  t.status='draft';
+  alert('Ticket '+t.num+' saved as draft.');
+  showPage('package-detail');renderPackageDetail();
+}
+
+function submitTicketForSig(){
+  const t=getTicketRef();if(!t)return;
+  if(!t.foreman){alert('Please select a foreman before submitting.');return;}
+  if(!t.super){alert('Please select a superintendent before submitting.');return;}
+  t.status='pending-sig';
+  alert('Ticket '+t.num+' submitted.\n\nDocuSign sent to '+t.foreman+' (Foreman).\nOnce signed, it will route to '+t.super+' for superintendent sign-off.');
+  showPage('package-detail');renderPackageDetail();
+}
+
+function aiImproveDesc(id){
+  const t=getTicketRef();if(!t)return;
+  const input=document.getElementById('desc-input-'+id);
+  const raw=input?input.value:t.desc;
+  if(!raw.trim()){alert('Please enter a description first.');return;}
+  const improved='Furnished and installed '+raw.replace(/ran /i,'').replace(/installed /i,'').replace(/did /i,'')+' per GC direction and applicable scope documents.';
+  if(input)input.value=improved;
+  t.desc=improved;
+}
+
+// ===================== JOB SETUP =====================
+function showJobSetup(){
+  const j=currJob();if(!j)return;
+  document.getElementById('bc-job-setup').innerHTML=`<span class="bc-link" onclick="showPage('jobs')">Jobs</span><span class="bc-sep">›</span><span class="bc-link" onclick="showPage('job-detail');renderJobDetail()">${j.num}</span><span class="bc-sep">›</span><span class="bc-current">Job setup</span>`;
+  document.getElementById('setup-job-num').value=j.num;
+  document.getElementById('setup-job-desc').value=j.desc;
+  document.getElementById('setup-job-gc').value=j.gc;
+  document.getElementById('setup-job-owner').value=j.owner;
+  document.getElementById('setup-job-ae').value=j.ae;
+  renderSetupSupers();
+  renderSetupClasses();
+  renderSetupWorkers();
+  showPage('job-setup');
+}
+
+function saveJobSetup(){
+  const j=currJob();if(!j)return;
+  j.num=document.getElementById('setup-job-num').value;
+  j.desc=document.getElementById('setup-job-desc').value;
+  j.gc=document.getElementById('setup-job-gc').value;
+  j.owner=document.getElementById('setup-job-owner').value;
+  j.ae=document.getElementById('setup-job-ae').value;
+  alert('Job setup saved.');
+  renderJobDetail();
+  showPage('job-detail');
+}
+
+function renderSetupSupers(){
+  const j=currJob();if(!j)return;
+  document.getElementById('setup-supers-list').innerHTML=j.supers.length?j.supers.map((s,i)=>`
+    <div class="list-row">
+      <div class="av">${initials(s.name)}</div>
+      <div class="row-body"><div class="row-title">${s.name}</div><div class="row-sub">${s.email} · ${s.phone}</div></div>
+      <button class="btn btn-sm btn-danger" onclick="removeSuper(${i})"><i class="ti ti-trash"></i></button>
+    </div>`).join(''):'<div style="color:#aaa;padding:12px;font-size:13px">No superintendents added.</div>';
+}
+
+function removeSuper(i){const j=currJob();if(!j)return;j.supers.splice(i,1);renderSetupSupers();}
+
+function renderSetupClasses(){
+  const j=currJob();if(!j)return;
+  document.getElementById('setup-class-body').innerHTML=j.classifications.map((c,i)=>`
+    <tr>
+      <td>${c.name}</td>
+      <td>${fmt(c.rate)}/hr</td>
+      <td>${fmt(c.rate*1.5)}/hr</td>
+      <td>${fmt(c.rate*2)}/hr</td>
+      <td>${c.ohp}%</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-sm btn-icon" onclick="openClassModal(${i})"><i class="ti ti-edit"></i></button>
+        <button class="btn btn-sm btn-icon btn-danger" onclick="removeClass(${i})"><i class="ti ti-trash"></i></button>
+      </td>
+    </tr>`).join('')||'<tr><td colspan="6" style="color:#aaa;font-size:12px;padding:12px">No classifications added.</td></tr>';
+}
+
+function removeClass(i){const j=currJob();if(!j)return;j.classifications.splice(i,1);renderSetupClasses();}
+
+function renderSetupWorkers(){
+  const j=currJob();if(!j)return;
+  const cls=j.classifications;
+  document.getElementById('setup-workers-list').innerHTML=j.workers.length?j.workers.map((w,i)=>{
+    const c=cls.find(c=>c.name===w.cls);
+    return`<div class="list-row">
+      <div class="av">${initials(w.first+' '+w.last)}</div>
+      <div class="row-body"><div class="row-title">${w.first} ${w.last}</div><div class="row-sub">${w.cls}${c?' · '+fmt(c.rate)+'/hr':''}</div></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-icon" onclick="openWorkerModal(${i})"><i class="ti ti-edit"></i></button>
+        <button class="btn btn-sm btn-icon btn-danger" onclick="removeWorker(${i})"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  }).join(''):'<div style="color:#aaa;padding:12px;font-size:13px">No workers added.</div>';
+}
+
+function removeWorker(i){const j=currJob();if(!j)return;j.workers.splice(i,1);renderSetupWorkers();}
+
+// ===================== MODALS =====================
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+function openClassModal(idx=''){
+  const j=currJob();if(!j)return;
+  document.getElementById('edit-class-idx').value=idx;
+  document.getElementById('modal-class-title').textContent=idx===''?'Add classification':'Edit classification';
+  if(idx!==''){
+    const c=j.classifications[idx];
+    document.getElementById('class-name').value=c.name;
+    document.getElementById('class-rate').value=c.rate;
+    document.getElementById('class-ohp').value=c.ohp;
+  } else {
+    document.getElementById('class-name').value='';
+    document.getElementById('class-rate').value='';
+    document.getElementById('class-ohp').value='10';
+  }
+  openModal('modal-classification');
+}
+
+function saveClassification(){
+  const j=currJob();if(!j)return;
+  const idx=document.getElementById('edit-class-idx').value;
+  const name=document.getElementById('class-name').value.trim();
+  const rate=parseFloat(document.getElementById('class-rate').value)||0;
+  const ohp=parseFloat(document.getElementById('class-ohp').value)||0;
+  if(!name){alert('Please enter a classification name.');return;}
+  if(idx===''){j.classifications.push({name,rate,ohp});}
+  else{j.classifications[parseInt(idx)]={name,rate,ohp};}
+  closeModal('modal-classification');
+  renderSetupClasses();
+}
+
+function openWorkerModal(idx=''){
+  const j=currJob();if(!j)return;
+  document.getElementById('edit-worker-idx').value=idx;
+  document.getElementById('modal-worker-title').textContent=idx===''?'Add worker':'Edit worker';
+  const clsSel=document.getElementById('worker-class');
+  clsSel.innerHTML=j.classifications.map(c=>`<option>${c.name}</option>`).join('');
+  if(idx!==''){
+    const w=j.workers[idx];
+    document.getElementById('worker-first').value=w.first;
+    document.getElementById('worker-last').value=w.last;
+    clsSel.value=w.cls;
+  } else {
+    document.getElementById('worker-first').value='';
+    document.getElementById('worker-last').value='';
+  }
+  openModal('modal-worker');
+}
+
+function saveWorker(){
+  const j=currJob();if(!j)return;
+  const idx=document.getElementById('edit-worker-idx').value;
+  const first=document.getElementById('worker-first').value.trim();
+  const last=document.getElementById('worker-last').value.trim();
+  const cls=document.getElementById('worker-class').value;
+  if(!first||!last){alert('Please enter first and last name.');return;}
+  const worker={id:genId(),first,last,cls};
+  if(idx===''){j.workers.push(worker);}
+  else{j.workers[parseInt(idx)]=worker;}
+  closeModal('modal-worker');
+  renderSetupWorkers();
+}
+
+function openSuperModal(){
+  state.selectedSuperFromDir=null;
+  switchSuperTab('dir');
+  renderDirContactsList();
+  openModal('modal-super');
+}
+
+function switchSuperTab(tab){
+  document.getElementById('super-from-dir').style.display=tab==='dir'?'block':'none';
+  document.getElementById('super-new-form').style.display=tab==='new'?'block':'none';
+  document.getElementById('tab-from-dir').classList.toggle('active',tab==='dir');
+  document.getElementById('tab-new-super').classList.toggle('active',tab==='new');
+}
+
+function renderDirContactsList(){
+  const list=document.getElementById('dir-contacts-list');
+  list.innerHTML=state.directory.contacts.map(c=>{
+    const co=state.directory.companies.find(x=>x.id===c.companyId);
+    const selected=state.selectedSuperFromDir===c.id;
+    return`<div class="list-row" onclick="selectSuperFromDir('${c.id}')" style="cursor:pointer;${selected?'background:#EBF3FB;border-radius:8px;padding:8px':''}">
+      <div class="av">${initials(c.first+' '+c.last)}</div>
+      <div class="row-body"><div class="row-title">${c.first} ${c.last}${selected?' <i class=\'ti ti-check\' style=\'color:#185FA5\'></i>':''}</div><div class="row-sub">${c.title||''} · ${co?co.name:''}</div></div>
+    </div>`;
+  }).join('')||'<div style="color:#aaa;padding:12px;font-size:13px">No contacts in directory. <span style="color:#185FA5;cursor:pointer" onclick="switchSuperTab(\'new\')">Add new contact.</span></div>';
+}
+
+function selectSuperFromDir(id){
+  state.selectedSuperFromDir=id;
+  renderDirContactsList();
+}
+
+function saveSuper(){
+  const j=currJob();if(!j)return;
+  const tab=document.getElementById('super-from-dir').style.display!=='none'?'dir':'new';
+  if(tab==='dir'){
+    if(!state.selectedSuperFromDir){alert('Please select a contact from the directory.');return;}
+    const c=state.directory.contacts.find(x=>x.id===state.selectedSuperFromDir);
+    if(c){j.supers.push({id:genId(),name:c.first+' '+c.last,email:c.email,phone:c.phone});}
+  } else {
+    const first=document.getElementById('super-first').value.trim();
+    const last=document.getElementById('super-last').value.trim();
+    const phone=document.getElementById('super-phone').value.trim();
+    const email=document.getElementById('super-email').value.trim();
+    if(!first||!last){alert('Please enter first and last name.');return;}
+    const name=first+' '+last;
+    j.supers.push({id:genId(),name,email,phone});
+    // Also add to directory
+    state.directory.contacts.push({id:genId(),companyId:'',first,last,title:'Superintendent',phone,email});
+  }
+  closeModal('modal-super');
+  renderSetupSupers();
+}
+
+function createPackage(){
+  const j=currJob();if(!j)return;
+  const title=document.getElementById('pkg-title').value.trim();
+  if(!title){alert('Please enter a package title.');return;}
+  const authType=document.getElementById('pkg-auth-type').value;
+  const authRef=document.getElementById('pkg-auth-ref').value.trim();
+  const pkgNum='TM-'+String(j.packages.length+1).padStart(3,'0');
+  const newPkg={id:genId(),num:pkgNum,title,authType,authRef,authFile:null,tickets:[]};
+  j.packages.push(newPkg);
+  document.getElementById('pkg-title').value='';
+  document.getElementById('pkg-auth-ref').value='';
+  closeModal('modal-new-package');
+  state.currentPkgId=newPkg.id;
+  renderPackageDetail();
+  showPage('package-detail');
+}
+
+function createJob(){
+  const num=document.getElementById('new-job-num').value.trim();
+  const desc=document.getElementById('new-job-desc').value.trim();
+  const gc=document.getElementById('new-job-gc').value.trim();
+  const owner=document.getElementById('new-job-owner').value.trim();
+  const ae=document.getElementById('new-job-ae').value.trim();
+  if(!num||!desc){alert('Please enter a job number and description.');return;}
+  const newJob={id:genId(),num,desc,gc,owner,ae,supers:[],classifications:[],workers:[],packages:[]};
+  state.jobs.push(newJob);
+  state.currentJobId=newJob.id;
+  closeModal('modal-new-job');
+  showJobSetup();
+}
+
+// ===================== DIRECTORY =====================
+function renderDirectory(){
+  renderDirCompanies();
+  renderDirContactsFull();
+}
+
+function switchDirTab(tab){
+  document.getElementById('dir-companies-view').style.display=tab==='companies'?'block':'none';
+  document.getElementById('dir-contacts-view').style.display=tab==='contacts'?'block':'none';
+  document.getElementById('dir-tab-companies').classList.toggle('active',tab==='companies');
+  document.getElementById('dir-tab-contacts').classList.toggle('active',tab==='contacts');
+}
+
+function renderDirCompanies(){
+  document.getElementById('dir-companies-list').innerHTML=state.directory.companies.map(co=>{
+    const contacts=state.directory.contacts.filter(c=>c.companyId===co.id);
+    return`<div class="list-row">
+      <div class="row-icon" style="background:#EBF3FB;color:#185FA5;font-size:13px;border-radius:8px"><i class="ti ti-building"></i></div>
+      <div class="row-body"><div class="row-title">${co.name}</div><div class="row-sub">${co.phone} · ${co.email}</div></div>
+      <div class="row-right"><div class="row-meta">${contacts.length} contact${contacts.length!==1?'s':''}</div></div>
+      <button class="btn btn-sm" onclick="openAddContactModal('${co.id}')"><i class="ti ti-user-plus"></i> Add contact</button>
+    </div>`;
+  }).join('')||'<div style="color:#aaa;padding:12px;font-size:13px">No companies yet.</div>';
+}
+
+function renderDirContactsFull(){
+  document.getElementById('dir-contacts-full-list').innerHTML=state.directory.contacts.map(c=>{
+    const co=state.directory.companies.find(x=>x.id===c.companyId);
+    return`<div class="list-row">
+      <div class="av">${initials(c.first+' '+c.last)}</div>
+      <div class="row-body"><div class="row-title">${c.first} ${c.last}</div><div class="row-sub">${c.title||''}${co?' · '+co.name:''} · ${c.email}</div></div>
+      <div class="row-right"><div class="row-meta">${c.phone}</div></div>
+    </div>`;
+  }).join('')||'<div style="color:#aaa;padding:12px;font-size:13px">No contacts yet.</div>';
+}
+
+function saveCompany(){
+  const name=document.getElementById('co-name').value.trim();
+  if(!name){alert('Please enter a company name.');return;}
+  state.directory.companies.push({id:genId(),name,phone:document.getElementById('co-phone').value,email:document.getElementById('co-email').value,address:document.getElementById('co-address').value});
+  closeModal('modal-company');
+  renderDirCompanies();
+}
+
+function openAddContactModal(companyId=''){
+  const sel=document.getElementById('contact-company-id');
+  sel.innerHTML=`<option value="">— No company —</option>`+state.directory.companies.map(c=>`<option value="${c.id}" ${c.id===companyId?'selected':''}>${c.name}</option>`).join('');
+  document.getElementById('contact-first').value='';
+  document.getElementById('contact-last').value='';
+  document.getElementById('contact-title').value='';
+  document.getElementById('contact-phone').value='';
+  document.getElementById('contact-email').value='';
+  openModal('modal-contact');
+}
+
+function saveContact(){
+  const first=document.getElementById('contact-first').value.trim();
+  const last=document.getElementById('contact-last').value.trim();
+  if(!first||!last){alert('Please enter first and last name.');return;}
+  state.directory.contacts.push({id:genId(),companyId:document.getElementById('contact-company-id').value,first,last,title:document.getElementById('contact-title').value,phone:document.getElementById('contact-phone').value,email:document.getElementById('contact-email').value});
+  closeModal('modal-contact');
+  renderDirContactsFull();
+  renderDirCompanies();
+}
+
+// ===================== PACKAGE PREVIEW =====================
+function showPackagePreview(){
+  const j=currJob();const p=currPkg();if(!j||!p)return;
+  document.getElementById('bc-preview').innerHTML=`<span class="bc-link" onclick="showPage('package-detail');renderPackageDetail()">${p.num}</span><span class="bc-sep">›</span><span class="bc-current">Preview</span>`;
+  let html=`<div class="preview-page">
+    <div class="preview-header">
+      <div class="preview-title">${j.desc}</div>
+      <div class="preview-sub">Time &amp; Material Package — ${p.num}: ${p.title}</div>
+    </div>
+    <div class="preview-meta">
+      <div class="preview-meta-item"><div class="preview-meta-label">Contractor</div>Your Company Name</div>
+      <div class="preview-meta-item"><div class="preview-meta-label">GC / Prime</div>${j.gc}</div>
+      <div class="preview-meta-item"><div class="preview-meta-label">Owner</div>${j.owner}</div>
+      <div class="preview-meta-item"><div class="preview-meta-label">Authorization</div>${p.authType}${p.authRef?' — '+p.authRef:''}</div>
+    </div>
+    <div class="preview-section-title">SUMMARY — LABOR</div>
+    <table class="preview-tbl"><thead><tr><th>Classification</th><th>Worker</th><th>Reg hrs</th><th>OT hrs</th><th>Rate</th><th>Total</th></tr></thead><tbody>`;
+  let laborTotal=0;
+  const laborByClass={};
+  p.tickets.forEach(t=>{t.labor.forEach(r=>{
+    if(!laborByClass[r.cls])laborByClass[r.cls]={reg:0,ot:0,dt:0,rate:r.rate,workers:new Set()};
+    laborByClass[r.cls].reg+=r.reg;laborByClass[r.cls].ot+=r.ot;laborByClass[r.cls].dt+=r.dt;
+    if(r.worker)laborByClass[r.cls].workers.add(r.worker);
+  });});
+  Object.entries(laborByClass).forEach(([cls,d])=>{
+    const cls_=j.classifications.find(c=>c.name===cls);
+    const ohp=cls_?cls_.ohp/100:0.1;
+    const base=d.reg*d.rate+d.ot*d.rate*1.5+d.dt*d.rate*2;
+    const total=base*(1+ohp);
+    laborTotal+=total;
+    html+=`<tr><td>${cls}</td><td>${[...d.workers].join(', ')||'—'}</td><td>${d.reg}</td><td>${d.ot}</td><td>${fmt(d.rate)}</td><td>${fmt(total)}</td></tr>`;
+  });
+  html+=`<tr class="preview-total"><td colspan="5">Labor total (incl. OH&P)</td><td>${fmt(laborTotal)}</td></tr></tbody></table>`;
+  html+=`<div class="preview-section-title">SUMMARY — MATERIALS</div><table class="preview-tbl"><thead><tr><th>Description</th><th>Unit</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead><tbody>`;
+  let matTotal=0;
+  const allMats={};
+  p.tickets.forEach(t=>{t.materials.forEach(r=>{const k=r.desc+'|'+r.unit;if(!allMats[k])allMats[k]={desc:r.desc,unit:r.unit,qty:0,rate:r.rate};allMats[k].qty+=r.qty;});});
+  Object.values(allMats).forEach(m=>{
+    const total=m.qty*m.rate*1.15;matTotal+=total;
+    html+=`<tr><td>${m.desc}</td><td>${m.unit}</td><td>${m.qty}</td><td>${fmt(m.rate)}</td><td>${fmt(total)}</td></tr>`;
+  });
+  html+=`<tr class="preview-total"><td colspan="4">Material total (incl. OH&P)</td><td>${fmt(matTotal)}</td></tr></tbody></table>`;
+  const grandTotal=laborTotal+matTotal;
+  html+=`<table class="preview-tbl" style="margin-top:16px"><tbody><tr class="preview-grand"><td colspan="4"><strong>PACKAGE GRAND TOTAL</strong></td><td><strong>${fmt(grandTotal)}</strong></td></tr></tbody></table></div>`;
+  p.tickets.forEach(t=>{
+    const tots=calcTicketTotals(t,j);
+    html+=`<div class="preview-page">
+      <div class="preview-header"><div class="preview-title">${t.num}</div><div class="preview-sub">${t.date} — ${t.desc}</div></div>
+      ${t.labor.length?`<div class="preview-section-title">LABOR</div><table class="preview-tbl"><thead><tr><th>Worker</th><th>Classification</th><th>Reg</th><th>OT</th><th>DT</th><th>Rate</th><th>Total</th></tr></thead><tbody>${t.labor.map(r=>{const base=r.reg*r.rate+r.ot*r.rate*1.5+r.dt*r.rate*2;return`<tr><td>${r.worker}</td><td>${r.cls}</td><td>${r.reg}</td><td>${r.ot}</td><td>${r.dt}</td><td>${fmt(r.rate)}</td><td>${fmt(base*1.1)}</td></tr>`;}).join('')}</tbody></table>`:''}
+      ${t.materials.length?`<div class="preview-section-title">MATERIALS</div><table class="preview-tbl"><thead><tr><th>Description</th><th>Unit</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead><tbody>${t.materials.map(r=>`<tr><td>${r.desc}</td><td>${r.unit}</td><td>${r.qty}</td><td>${fmt(r.rate)}</td><td>${fmt(r.qty*r.rate*1.15)}</td></tr>`).join('')}</tbody></table>`:''}
+      ${t.photos.length?`<div class="preview-section-title">PHOTOS (${t.photos.length})</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">${t.photos.map(ph=>`<div style="background:#f0f0ee;border-radius:6px;padding:20px;text-align:center;font-size:11px;color:#888"><i class="ti ti-photo" style="font-size:20px;display:block;margin-bottom:4px"></i>${ph.name}<br>${ph.date}</div>`).join('')}</div>`:''}
+      <div class="sig-preview">
+        <div><div class="sig-line">_________________________<br>Foreman: ${t.foreman||'_______________'} &nbsp; Date: ________</div></div>
+        <div><div class="sig-line">_________________________<br>GC Superintendent: ${t.super||'_______________'} &nbsp; Date: ________</div></div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('preview-content').innerHTML=html;
+  showPage('package-preview');
+}
+
+// Patch preview button
+document.addEventListener('DOMContentLoaded',()=>{
+  const prevBtn=document.querySelector('[onclick="showPage(\'package-preview\')"]');
+  if(prevBtn)prevBtn.setAttribute('onclick','showPackagePreview()');
+});
+
+// Close modals on background click
+document.querySelectorAll('.modal-bg').forEach(bg=>{
+  bg.addEventListener('click',e=>{if(e.target===bg)bg.classList.remove('open');});
+});
+
+// Init
+renderDashboard();
+</script>
+</body>
+</html>

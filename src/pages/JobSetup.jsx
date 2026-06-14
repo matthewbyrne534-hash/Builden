@@ -12,7 +12,7 @@ export default function JobSetup({ jobId, navigate }) {
   // Classification modal
   const [showCls, setShowCls] = useState(false);
   const [editCls, setEditCls] = useState(null);
-  const [clsForm, setClsForm] = useState({ name: '', rate: '', ohp: '10' });
+  const [clsForm, setClsForm] = useState({ name: '', rate: '', otRate: '', dtRate: '' });
 
   // Worker modal
   const [showWorker, setShowWorker] = useState(false);
@@ -35,11 +35,11 @@ export default function JobSetup({ jobId, navigate }) {
   }
 
   // Classifications
-  function openAddCls() { setClsForm({ name: '', rate: '', ohp: '10' }); setEditCls(null); setShowCls(true); }
-  function openEditCls(cls) { setClsForm({ name: cls.name, rate: String(cls.rate), ohp: String(cls.ohp) }); setEditCls(cls); setShowCls(true); }
+  function openAddCls() { setClsForm({ name: '', rate: '', otRate: '', dtRate: '' }); setEditCls(null); setShowCls(true); }
+  function openEditCls(cls) { setClsForm({ name: cls.name, rate: String(cls.rate), otRate: String(cls.otRate || ''), dtRate: String(cls.dtRate || '') }); setEditCls(cls); setShowCls(true); }
   function saveCls() {
-    if (!clsForm.name || !clsForm.rate) return alert('Name and rate are required.');
-    const cls = { id: editCls?.id || genId(), name: clsForm.name, rate: parseFloat(clsForm.rate) || 0, ohp: parseFloat(clsForm.ohp) || 0 };
+    if (!clsForm.name || !clsForm.regRate) return alert('Name and regular rate are required.');
+    const cls = { id: editCls?.id || genId(), name: clsForm.name, regRate: parseFloat(clsForm.regRate) || 0, otRate: parseFloat(clsForm.otRate) || 0, dtRate: parseFloat(clsForm.dtRate) || 0 };
     if (editCls) { dispatch({ type: 'UPDATE_CLASSIFICATION', jobId: job.id, cls }); }
     else { dispatch({ type: 'ADD_CLASSIFICATION', jobId: job.id, cls }); }
     setShowCls(false);
@@ -120,10 +120,9 @@ export default function JobSetup({ jobId, navigate }) {
                 {job.classifications.map(c => (
                   <tr key={c.id}>
                     <td style={{ fontWeight: 600 }}>{c.name}</td>
-                    <td>${c.rate.toFixed(2)}/hr</td>
-                    <td>${(c.rate * 1.5).toFixed(2)}/hr</td>
-                    <td>${(c.rate * 2).toFixed(2)}/hr</td>
-                    <td>{c.ohp}%</td>
+                    <td>${(c.regRate || 0).toFixed(2)}/hr</td>
+                    <td>${(c.otRate || 0).toFixed(2)}/hr</td>
+                    <td>${(c.dtRate || 0).toFixed(2)}/hr</td>
                     <td>
                       <div style={{ display: 'flex', gap: 4 }}>
                         <button className="btn btn-icon btn-sm" onClick={() => openEditCls(c)}><i className="ti ti-edit" /></button>
@@ -150,7 +149,7 @@ export default function JobSetup({ jobId, navigate }) {
             return (
               <div key={w.id} className="list-row">
                 <div className="row-icon">{initials(w.first + ' ' + w.last)}</div>
-                <div className="row-body"><div className="row-title">{w.first} {w.last}</div><div className="row-sub">{cls ? cls.name + ' · $' + cls.rate.toFixed(2) + '/hr' : 'No classification'}</div></div>
+                <div className="row-body"><div className="row-title">{w.first} {w.last}</div><div className="row-sub">{cls ? cls.name + ' · $' + (cls.regRate || 0).toFixed(2) + '/hr' : 'No classification'}</div></div>
                 <div className="row-actions">
                   <button className="btn btn-icon btn-sm" onClick={() => openEditWorker(w)}><i className="ti ti-edit" /></button>
                   <button className="btn btn-icon btn-sm btn-danger" onClick={() => setConfirmRemoveWorker(w)}><i className="ti ti-trash" /></button>
@@ -173,9 +172,9 @@ export default function JobSetup({ jobId, navigate }) {
         <div className="form-grid form-grid-2">
           <FormGroup label="Classification name *" span="2"><Input value={clsForm.name} onChange={v => setClsForm(f => ({ ...f, name: v }))} placeholder="e.g. Foreman, Electrician, Laborer" /></FormGroup>
           <FormGroup label="Regular rate ($/hr) *"><Input type="number" value={clsForm.rate} onChange={v => setClsForm(f => ({ ...f, rate: v }))} placeholder="0.00" /></FormGroup>
-          <FormGroup label="Default OH&P %"><Input type="number" value={clsForm.ohp} onChange={v => setClsForm(f => ({ ...f, ohp: v }))} placeholder="10" /></FormGroup>
+          <FormGroup label="OT rate ($/hr)"><Input type="number" value={clsForm.otRate} onChange={v => setClsForm(f => ({ ...f, otRate: v }))} placeholder="0.00" /></FormGroup>
+          <FormGroup label="DT rate ($/hr)"><Input type="number" value={clsForm.dtRate} onChange={v => setClsForm(f => ({ ...f, dtRate: v }))} placeholder="0.00" /></FormGroup>
         </div>
-        {clsForm.rate && <div style={{ fontSize: 12, color: '#888', marginTop: 8, padding: '8px 12px', background: '#fafaf8', borderRadius: 8 }}>OT: ${(parseFloat(clsForm.rate || 0) * 1.5).toFixed(2)}/hr &nbsp;·&nbsp; DT: ${(parseFloat(clsForm.rate || 0) * 2).toFixed(2)}/hr</div>}
       </Modal>
 
       {/* WORKER MODAL */}
@@ -186,7 +185,7 @@ export default function JobSetup({ jobId, navigate }) {
           <FormGroup label="Last name *"><Input value={workerForm.last} onChange={v => setWorkerForm(f => ({ ...f, last: v }))} placeholder="Last" /></FormGroup>
           <FormGroup label="Classification" span="2">
             <Select value={workerForm.classId} onChange={v => setWorkerForm(f => ({ ...f, classId: v }))}
-              options={job.classifications.map(c => ({ value: c.id, label: c.name + ' — $' + c.rate.toFixed(2) + '/hr' }))}
+              options={job.classifications.map(c => ({ value: c.id, label: c.name + ' — $' + (c.regRate || 0).toFixed(2) + '/hr' }))}
               placeholder="— Select classification —" />
           </FormGroup>
         </div>

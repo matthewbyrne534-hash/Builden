@@ -54,28 +54,30 @@ export default function Dashboard({ navigate }) {
           <EmptyState icon="building" message="No jobs yet. Create your first job to get started." />
         ) : (
           jobs.map(j => {
-            const executed = j.packages.reduce((s, p) => s + calcPackageTotals(p, j).executed, 0);
-            const inProgress = j.packages.filter(p => p.tickets.some(t => ['draft', 'pending-sig'].includes(t.status)));
-            const pending = j.packages.filter(p => p.tickets.some(t => t.status === 'submitted'));
-            const approved = j.packages.filter(p => p.tickets.length > 0 && p.tickets.every(t => t.status === 'approved' || t.status === 'signed'));
+            const openPkgs = j.packages.filter(p => p.tickets.some(t => ['draft', 'pending-sig'].includes(t.status)));
+            const openVal = openPkgs.reduce((s, p) => s + calcPackageTotals(p, j).grand, 0);
+            const pendingPkgs = j.packages.filter(p => p.tickets.some(t => t.status === 'submitted'));
+            const pendingVal = pendingPkgs.reduce((s, p) => s + calcPackageTotals(p, j).grand, 0);
+            const executedPkgs = j.packages.filter(p => p.tickets.length > 0 && p.tickets.every(t => ['signed', 'approved'].includes(t.status)));
+            const executedVal = j.packages.reduce((s, p) => s + calcPackageTotals(p, j).executed, 0);
             return (
               <div key={j.id} className="list-row clickable" onClick={() => navigate('job-detail', { jobId: j.id })}>
                 <div className="row-body">
                   <div className="row-title">{j.num} — {j.desc}</div>
                   <div className="row-sub">{j.gc}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 16, marginRight: 12 }}>
+                <div style={{ display: 'flex', gap: 20, marginRight: 12 }}>
                   <div className="row-right">
-                    <div className="row-amount" style={{ color: '#666' }}>{inProgress.length} open</div>
-                    <div className="row-meta blue" style={{ color: '#185FA5' }}>{inProgress.length} pkg{inProgress.length !== 1 ? 's' : ''}</div>
+                    <div className="row-amount" style={{ color: '#666' }}>{fmt(openVal)}</div>
+                    <div className="row-meta" style={{ color: '#185FA5' }}>{openPkgs.length} pkg{openPkgs.length !== 1 ? 's' : ''} open</div>
                   </div>
                   <div className="row-right">
-                    <div className="row-amount" style={{ color: '#8A5000' }}>{fmt(j.packages.filter(p => p.tickets.some(t => t.status === 'submitted')).reduce((s, p) => s + calcPackageTotals(p, j).grand, 0))}</div>
-                    <div className="row-meta" style={{ color: '#8A5000' }}>{pending.length} pending GC</div>
+                    <div className="row-amount" style={{ color: '#8A5000' }}>{fmt(pendingVal)}</div>
+                    <div className="row-meta" style={{ color: '#8A5000' }}>{pendingPkgs.length} pkg{pendingPkgs.length !== 1 ? 's' : ''} pending GC</div>
                   </div>
                   <div className="row-right">
-                    <div className="row-amount" style={{ color: '#2A6008' }}>{fmt(executed)}</div>
-                    <div className="row-meta" style={{ color: '#2A6008' }}>{approved.length} executed</div>
+                    <div className="row-amount" style={{ color: '#2A6008' }}>{fmt(executedVal)}</div>
+                    <div className="row-meta" style={{ color: '#2A6008' }}>{executedPkgs.length} pkg{executedPkgs.length !== 1 ? 's' : ''} executed</div>
                   </div>
                 </div>
               </div>
@@ -86,4 +88,3 @@ export default function Dashboard({ navigate }) {
     </div>
   );
 }
-

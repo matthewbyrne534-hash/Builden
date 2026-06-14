@@ -14,48 +14,68 @@ export function initials(name) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().substr(0, 2);
 }
 
-export function calcTicketTotals(ticket, job) {
+// Ticket totals — no OH&P applied here, just raw hours x rates
+// OH&P is applied at package level by the PM during package preparation
+export function calcTicketTotals(ticket) {
   let laborBase = 0;
-  let laborOhpAmt = 0;
   (ticket.labor || []).forEach(r => {
-    const base = (r.reg || 0) * (r.rate || 0) + (r.ot || 0) * (r.rate || 0) * 1.5 + (r.dt || 0) * (r.rate || 0) * 2;
+    const base = (r.reg || 0) * (r.regRate || 0)
+               + (r.ot || 0) * (r.otRate || 0)
+               + (r.dt || 0) * (r.dtRate || 0);
     laborBase += base;
-    laborOhpAmt += base * ((r.ohp || 0) / 100);
   });
-  const laborTotal = laborBase + laborOhpAmt;
 
   let matBase = 0;
-  let matOhpAmt = 0;
   (ticket.materials || []).forEach(r => {
-    const base = (r.qty || 0) * (r.rate || 0);
-    matBase += base;
-    matOhpAmt += base * ((r.ohp || 0) / 100);
+    matBase += (r.qty || 0) * (r.rate || 0);
   });
-  const matTotal = matBase + matOhpAmt;
 
   let vendorBase = 0;
-  let vendorOhpAmt = 0;
   (ticket.vendors || []).forEach(r => {
     vendorBase += (r.amount || 0);
-    vendorOhpAmt += (r.amount || 0) * ((r.markup || 0) / 100);
   });
-  const vendorTotal = vendorBase + vendorOhpAmt;
 
   return {
-    laborBase, laborOhpAmt, laborTotal,
-    matBase, matOhpAmt, matTotal,
-    vendorBase, vendorOhpAmt, vendorTotal,
-    grand: laborTotal + matTotal + vendorTotal
+    laborBase,
+    matBase,
+    vendorBase,
+    grand: laborBase + matBase + vendorBase
   };
 }
 
-export function calcPackageTotals(pkg, job) {
+// Package totals with OH&P applied at package level
+export function calcPackageTotalsWithOhp(pkg, prepSettings) {
+  let laborBase = 0;
+  let matBase = 0;
+  let vendorBase = 0;
+
+  (pkg.tickets || []).forEach(t => {
+    const tots = calcTicketTotals(t);
+    laborBase += tots.laborBase;
+    matBase += tots.matBase;
+    vendorBase += tots.vendorBase;
+  });
+
+  const laborOhp = laborBase * ((prepSettings?.laborOhp || 0) / 100);
+  const matOhp = matBase * ((prepSettings?.matOhp || 0) / 100);
+  const vendorOhp = vendorBase * ((prepSettings?.vendorMarkup || 0) / 100);
+
+  return {
+    laborBase, laborOhp, laborTotal: laborBase + laborOhp,
+    matBase, matOhp, matTotal: matBase + matOhp,
+    vendorBase, vendorOhp, vendorTotal: vendorBase + vendorOhp,
+    grand: laborBase + laborOhp + matBase + matOhp + vendorBase + vendorOhp
+  };
+}
+
+// Simple package totals without OH&P (for dashboard/list views)
+export function calcPackageTotals(pkg) {
   let grand = 0;
   let executed = 0;
   (pkg.tickets || []).forEach(t => {
-    const tots = calcTicketTotals(t, job);
+    const tots = calcTicketTotals(t);
     grand += tots.grand;
-    if (t.status === 'signed' || t.status === 'submitted' || t.status === 'approved') {
+    if (['signed', 'submitted', 'approved'].includes(t.status)) {
       executed += tots.grand;
     }
   });
@@ -85,13 +105,6 @@ export function ticketStatusInfo(status) {
   return map[status] || { label: status, cls: 'badge-gray' };
 }
 
-export function buildTicketNum(numSystem, pkgSeq, ticketSeq) {
-  const base = numSystem
-    .replace('{seq}', String(pkgSeq).padStart(3, '0'))
-    .replace('{year}', new Date().getFullYear());
-  return base + '.' + ticketSeq;
-}
-
 export function buildPkgNum(numSystem, pkgSeq) {
   return numSystem
     .replace('{seq}', String(pkgSeq).padStart(3, '0'))
@@ -112,10 +125,4 @@ export const AUTH_TYPES = [
   'Revised Specification',
   'RFI Response',
   'Sketch or Bulletin'
-];
-
-export const NUM_SYSTEMS = [
-  { label: 'TM-001 (default)', value: 'TM-{seq}' },
-  { label: 'Job#-TM-001', value: '{jobnum}-TM-{seq}' },
-  { label: 'Custom (type below)', value: 'custom' }
 ];

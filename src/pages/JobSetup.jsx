@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../data/store';
 import { genId, initials } from '../utils/helpers';
-import { Breadcrumb, Modal, FormGroup, Input, Select, ConfirmModal, Tabs, SearchBar } from '../components/UI';
+import { Breadcrumb, Modal, FormGroup, Input, Select, ConfirmModal, SearchBar } from '../components/UI';
 
 export default function JobSetup({ jobId, navigate }) {
   const { state, dispatch } = useStore();
@@ -21,7 +21,6 @@ export default function JobSetup({ jobId, navigate }) {
 
   // Super modal
   const [showSuper, setShowSuper] = useState(false);
-  const [superTab, setSuperTab] = useState('dir');
   const [selectedDirContact, setSelectedDirContact] = useState(null);
   const [superSearch, setSuperSearch] = useState('');
   const [superForm, setSuperForm] = useState({ name: '', email: '', phone: '' });
@@ -204,36 +203,27 @@ export default function JobSetup({ jobId, navigate }) {
       {/* SUPERINTENDENT MODAL */}
       <Modal open={showSuper} onClose={() => setShowSuper(false)} title="Add Superintendent"
         footer={<><button className="btn" onClick={() => setShowSuper(false)}>Cancel</button><button className="btn btn-primary" onClick={saveSuper}><i className="ti ti-check" /> Add to job</button></>}>
-        <Tabs tabs={[{ id: 'dir', label: 'From directory' }, { id: 'new', label: 'Add new' }]} active={superTab} onChange={setSuperTab} />
-        {superTab === 'dir' ? (
-          <>
-            <SearchBar value={superSearch} onChange={setSuperSearch} placeholder="Search contacts..." />
-            <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-              {filteredDirContacts.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: 12 }}>No contacts found. Switch to "Add new" tab.</p> : (
-                filteredDirContacts.map(c => {
-                  const co = state.directory.companies.find(x => x.id === c.companyId);
-                  const selected = selectedDirContact === c.id;
-                  return (
-                    <div key={c.id} className="list-row clickable" onClick={() => setSelectedDirContact(c.id)}
-                      style={{ background: selected ? '#EBF3FB' : 'transparent', borderRadius: 8, padding: '10px 8px' }}>
-                      <div className="row-icon">{initials(c.first + ' ' + c.last)}</div>
-                      <div className="row-body">
-                        <div className="row-title">{c.first} {c.last} {selected && <i className="ti ti-check" style={{ color: '#185FA5', marginLeft: 4 }} />}</div>
-                        <div className="row-sub">{c.title}{co ? ' · ' + co.name : ''}</div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="form-grid form-grid-2">
-            <FormGroup label="Full name *" span="2"><Input value={superForm.name} onChange={v => setSuperForm(f => ({ ...f, name: v }))} placeholder="First Last" /></FormGroup>
-            <FormGroup label="Phone"><Input value={superForm.phone} onChange={v => setSuperForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
-            <FormGroup label="Email"><Input value={superForm.email} onChange={v => setSuperForm(f => ({ ...f, email: v }))} placeholder="name@company.com" /></FormGroup>
-          </div>
-        )}
+        <SearchBar value={superSearch} onChange={setSuperSearch} placeholder="Search directory contacts..." />
+        <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+          {filteredDirContacts.length === 0 ? (
+            <p style={{ color: '#aaa', fontSize: 13, padding: 12 }}>No contacts found in directory. Add contacts in the Directory section first.</p>
+          ) : (
+            filteredDirContacts.map(c => {
+              const co = state.directory.companies.find(x => x.id === c.companyId);
+              const selected = selectedDirContact === c.id;
+              return (
+                <div key={c.id} className="list-row clickable" onClick={() => setSelectedDirContact(c.id)}
+                  style={{ background: selected ? '#EBF3FB' : 'transparent', borderRadius: 8, padding: '10px 8px' }}>
+                  <div className="row-icon">{initials(c.first + ' ' + c.last)}</div>
+                  <div className="row-body">
+                    <div className="row-title">{c.first} {c.last} {selected && <i className="ti ti-check" style={{ color: '#185FA5', marginLeft: 4 }} />}</div>
+                    <div className="row-sub">{c.title}{co ? ' · ' + co.name : ''}</div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </Modal>
 
       {/* CONFIRM MODALS */}
@@ -249,3 +239,4 @@ export default function JobSetup({ jobId, navigate }) {
     </div>
   );
 }
+

@@ -4,11 +4,14 @@ import { useStore } from '../data/store';
 import { genId, fmt, calcTicketTotals } from '../utils/helpers';
 import { Breadcrumb, Notice, FormGroup, Input } from '../components/UI';
 
-// ─── LABOR ROW ────────────────────────────────────────────────────────────────
-function LaborRow({ row, index, workers, classifications, onChange, onRemove }) {
+// ─── LABOR ROW (foreman view - hours only, no rates shown) ───────────────────
+function LaborRow({ row, index, workers, classifications, onChange, onRemove, isReadOnly }) {
   const handleWorkerChange = (workerId) => {
     const worker = workers.find(w => w.id === workerId);
-    if (!worker) { onChange(index, { ...row, workerId: '', workerName: '', classId: '', className: '', rate: 0 }); return; }
+    if (!worker) {
+      onChange(index, { ...row, workerId: '', workerName: '', classId: '', className: '', regRate: 0, otRate: 0, dtRate: 0 });
+      return;
+    }
     const cls = classifications.find(c => c.id === worker.classId);
     onChange(index, {
       ...row,
@@ -16,16 +19,16 @@ function LaborRow({ row, index, workers, classifications, onChange, onRemove }) 
       workerName: worker.first + ' ' + worker.last,
       classId: worker.classId,
       className: cls?.name || '',
-      rate: cls?.rate || 0,
-      ohp: cls?.ohp || 10
+      regRate: cls?.regRate || 0,
+      otRate: cls?.otRate || 0,
+      dtRate: cls?.dtRate || 0
     });
   };
-  const base = (row.reg || 0) * (row.rate || 0) + (row.ot || 0) * (row.rate || 0) * 1.5 + (row.dt || 0) * (row.rate || 0) * 2;
-  const total = base * (1 + (row.ohp || 0) / 100);
+
   return (
     <tr>
       <td>
-        <select className="tbl-input" value={row.workerId || ''} onChange={e => handleWorkerChange(e.target.value)} style={{ minWidth: 150 }}>
+        <select className="tbl-input" value={row.workerId || ''} onChange={e => handleWorkerChange(e.target.value)} style={{ minWidth: 160 }} disabled={isReadOnly}>
           <option value="">— Select worker —</option>
           {workers.map(w => {
             const cls = classifications.find(c => c.id === w.classId);
@@ -33,53 +36,54 @@ function LaborRow({ row, index, workers, classifications, onChange, onRemove }) 
           })}
         </select>
       </td>
-      <td><input className="tbl-input" type="number" min="0" step="0.5" value={row.reg || 0} onChange={e => onChange(index, { ...row, reg: parseFloat(e.target.value) || 0 })} style={{ width: 65 }} /></td>
-      <td><input className="tbl-input" type="number" min="0" step="0.5" value={row.ot || 0} onChange={e => onChange(index, { ...row, ot: parseFloat(e.target.value) || 0 })} style={{ width: 65 }} /></td>
-      <td><input className="tbl-input" type="number" min="0" step="0.5" value={row.dt || 0} onChange={e => onChange(index, { ...row, dt: parseFloat(e.target.value) || 0 })} style={{ width: 65 }} /></td>
-      <td style={{ fontWeight: 600, color: '#444' }}>{fmt(total)}</td>
-      <td><button onClick={() => onRemove(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: 4 }}><i className="ti ti-x" /></button></td>
+      <td style={{ color: '#888', fontSize: 12, fontWeight: 500 }}>{row.className || '—'}</td>
+      <td><input className="tbl-input" type="number" min="0" step="0.5" value={row.reg || 0} onChange={e => onChange(index, { ...row, reg: parseFloat(e.target.value) || 0 })} style={{ width: 70 }} disabled={isReadOnly} /></td>
+      <td><input className="tbl-input" type="number" min="0" step="0.5" value={row.ot || 0} onChange={e => onChange(index, { ...row, ot: parseFloat(e.target.value) || 0 })} style={{ width: 70 }} disabled={isReadOnly} /></td>
+      <td><input className="tbl-input" type="number" min="0" step="0.5" value={row.dt || 0} onChange={e => onChange(index, { ...row, dt: parseFloat(e.target.value) || 0 })} style={{ width: 70 }} disabled={isReadOnly} /></td>
+      <td>{!isReadOnly && <button onClick={() => onRemove(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: 4 }}><i className="ti ti-x" /></button>}</td>
     </tr>
   );
 }
 
-// ─── MATERIAL ROW ─────────────────────────────────────────────────────────────
-function MaterialRow({ row, index, onChange, onRemove }) {
-  const base = (row.qty || 0) * (row.rate || 0);
-  const total = base * (1 + (row.ohp || 15) / 100);
+// ─── MATERIAL ROW (description and quantity only for foreman) ─────────────────
+function MaterialRow({ row, index, onChange, onRemove, isReadOnly }) {
   const units = ['Each', 'Linear ft', 'Square ft', 'Lump sum', 'CY', 'LF', 'SF', 'LB', 'Ton'];
   return (
     <tr>
-      <td><input className="tbl-input" type="text" value={row.desc || ''} placeholder="Material description" onChange={e => onChange(index, { ...row, desc: e.target.value })} style={{ minWidth: 140 }} /></td>
-      <td><select className="tbl-input" value={row.unit || 'Each'} onChange={e => onChange(index, { ...row, unit: e.target.value })} style={{ minWidth: 90 }}>{units.map(u => <option key={u}>{u}</option>)}</select></td>
-      <td><input className="tbl-input" type="number" min="0" step="0.01" value={row.qty || 0} onChange={e => onChange(index, { ...row, qty: parseFloat(e.target.value) || 0 })} style={{ width: 70 }} /></td>
-      <td><input className="tbl-input" type="number" min="0" step="0.01" value={row.rate || 0} onChange={e => onChange(index, { ...row, rate: parseFloat(e.target.value) || 0 })} style={{ width: 80 }} /></td>
-      <td style={{ fontWeight: 600, color: '#444' }}>{fmt(total)}</td>
       <td>
-        <button className="btn btn-sm" style={{ fontSize: 11 }} onClick={() => document.getElementById('inv-' + index).click()}><i className="ti ti-paperclip" /> Attach</button>
-        <input type="file" id={'inv-' + index} style={{ display: 'none' }} accept=".pdf,.jpg,.png" onChange={e => onChange(index, { ...row, invoiceName: e.target.files[0]?.name || row.invoiceName })} />
+        <input className="tbl-input" type="text" value={row.desc || ''} placeholder="Material description"
+          onChange={e => onChange(index, { ...row, desc: e.target.value })} style={{ minWidth: 160 }} disabled={isReadOnly} />
+      </td>
+      <td>
+        <select className="tbl-input" value={row.unit || 'Each'} onChange={e => onChange(index, { ...row, unit: e.target.value })} style={{ minWidth: 90 }} disabled={isReadOnly}>
+          {units.map(u => <option key={u}>{u}</option>)}
+        </select>
+      </td>
+      <td>
+        <input className="tbl-input" type="number" min="0" step="0.01" value={row.qty || 0}
+          onChange={e => onChange(index, { ...row, qty: parseFloat(e.target.value) || 0 })} style={{ width: 80 }} disabled={isReadOnly} />
+      </td>
+      <td>
+        <button className="btn btn-sm" style={{ fontSize: 11 }} onClick={() => document.getElementById('inv-' + index).click()} disabled={isReadOnly}>
+          <i className="ti ti-paperclip" /> {row.invoiceName ? 'Change' : 'Attach'}
+        </button>
+        <input type="file" id={'inv-' + index} style={{ display: 'none' }} accept=".pdf,.jpg,.png"
+          onChange={e => onChange(index, { ...row, invoiceName: e.target.files[0]?.name || row.invoiceName })} />
         {row.invoiceName && <div style={{ fontSize: 10, color: '#185FA5', marginTop: 3 }}>{row.invoiceName}</div>}
       </td>
-      <td><button onClick={() => onRemove(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: 4 }}><i className="ti ti-x" /></button></td>
+      <td>{!isReadOnly && <button onClick={() => onRemove(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: 4 }}><i className="ti ti-x" /></button>}</td>
     </tr>
   );
 }
 
 // ─── VENDOR ROW ───────────────────────────────────────────────────────────────
-function VendorRow({ row, index, onChange, onRemove }) {
-  const total = (row.amount || 0) * (1 + (row.markup || 2.5) / 100);
+function VendorRow({ row, index, onChange, onRemove, isReadOnly }) {
   return (
     <tr>
-      <td><input className="tbl-input" type="text" value={row.name || ''} placeholder="Vendor / sub name" onChange={e => onChange(index, { ...row, name: e.target.value })} style={{ minWidth: 130 }} /></td>
-      <td><input className="tbl-input" type="text" value={row.desc || ''} placeholder="Description" onChange={e => onChange(index, { ...row, desc: e.target.value })} style={{ minWidth: 130 }} /></td>
-      <td><input className="tbl-input" type="number" min="0" step="0.01" value={row.amount || 0} onChange={e => onChange(index, { ...row, amount: parseFloat(e.target.value) || 0 })} style={{ width: 90 }} /></td>
-      <td>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <input className="tbl-input" type="number" min="0" max="100" step="0.5" value={row.markup || 2.5} onChange={e => onChange(index, { ...row, markup: parseFloat(e.target.value) || 0 })} style={{ width: 60 }} />
-          <span style={{ fontSize: 12, color: '#888' }}>%</span>
-        </div>
-      </td>
-      <td style={{ fontWeight: 600, color: '#444' }}>{fmt(total)}</td>
-      <td><button onClick={() => onRemove(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: 4 }}><i className="ti ti-x" /></button></td>
+      <td><input className="tbl-input" type="text" value={row.name || ''} placeholder="Vendor / sub name" onChange={e => onChange(index, { ...row, name: e.target.value })} style={{ minWidth: 130 }} disabled={isReadOnly} /></td>
+      <td><input className="tbl-input" type="text" value={row.desc || ''} placeholder="Description" onChange={e => onChange(index, { ...row, desc: e.target.value })} style={{ minWidth: 130 }} disabled={isReadOnly} /></td>
+      <td><input className="tbl-input" type="number" min="0" step="0.01" value={row.amount || 0} onChange={e => onChange(index, { ...row, amount: parseFloat(e.target.value) || 0 })} style={{ width: 90 }} disabled={isReadOnly} /></td>
+      <td>{!isReadOnly && <button onClick={() => onRemove(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: 4 }}><i className="ti ti-x" /></button>}</td>
     </tr>
   );
 }
@@ -91,20 +95,14 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
   const pkg = job?.packages.find(p => p.id === pkgId);
   const savedTicket = pkg?.tickets.find(t => t.id === ticketId);
 
-  // ALL hooks must be declared before any early return
+  // All hooks before any early return
   const [ticket, setTicket] = useState(() =>
     savedTicket ? JSON.parse(JSON.stringify(savedTicket)) : null
   );
-  const [laborOhpOverride, setLaborOhpOverride] = useState(null);
-  const [matOhpOverride, setMatOhpOverride] = useState(null);
 
   useEffect(() => {
-    if (savedTicket) {
-      setTicket(JSON.parse(JSON.stringify(savedTicket)));
-      setLaborOhpOverride(null);
-      setMatOhpOverride(null);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (savedTicket) setTicket(JSON.parse(JSON.stringify(savedTicket)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketId]);
 
   const setLabor = useCallback((idx, row) =>
@@ -120,20 +118,15 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
   const removeVendor = useCallback((idx) =>
     setTicket(t => ({ ...t, vendors: t.vendors.filter((_, i) => i !== idx) })), []);
 
-  // Now safe to do early return after all hooks
   if (!job || !pkg || !ticket) return <div className="card"><p style={{ color: '#999' }}>Ticket not found.</p></div>;
 
-  const tots = calcTicketTotals(ticket, job);
+  const isReadOnly = ['signed', 'approved', 'submitted'].includes(ticket.status);
   const prevDescs = [...new Set(pkg.tickets.filter(t => t.id !== ticketId).map(t => t.desc).filter(Boolean))];
-  const isReadOnly = ticket.status === 'signed' || ticket.status === 'approved' || ticket.status === 'submitted';
-  const laborOhpPct = laborOhpOverride !== null ? laborOhpOverride : (ticket.labor[0]?.ohp ?? 10);
-  const matOhpPct = matOhpOverride !== null ? matOhpOverride : (ticket.materials[0]?.ohp ?? 15);
 
   const setField = (field, value) => setTicket(t => ({ ...t, [field]: value }));
-
-  const addLabor = () => setTicket(t => ({ ...t, labor: [...t.labor, { id: genId(), workerId: '', workerName: '', classId: '', className: '', reg: 0, ot: 0, dt: 0, rate: 0, ohp: 10 }] }));
-  const addMaterial = () => setTicket(t => ({ ...t, materials: [...t.materials, { id: genId(), desc: '', unit: 'Each', qty: 0, rate: 0, ohp: 15, invoiceName: '' }] }));
-  const addVendor = () => setTicket(t => ({ ...t, vendors: [...t.vendors, { id: genId(), name: '', desc: '', amount: 0, markup: 2.5 }] }));
+  const addLabor = () => setTicket(t => ({ ...t, labor: [...t.labor, { id: genId(), workerId: '', workerName: '', classId: '', className: '', reg: 0, ot: 0, dt: 0, regRate: 0, otRate: 0, dtRate: 0 }] }));
+  const addMaterial = () => setTicket(t => ({ ...t, materials: [...t.materials, { id: genId(), desc: '', unit: 'Each', qty: 0, rate: 0, invoiceName: '' }] }));
+  const addVendor = () => setTicket(t => ({ ...t, vendors: [...t.vendors, { id: genId(), name: '', desc: '', amount: 0 }] }));
   const addPhotos = (files) => {
     const newPhotos = Array.from(files).map(f => ({ id: genId(), name: f.name, date: new Date().toLocaleDateString(), timestamp: new Date().toLocaleString() }));
     setTicket(t => ({ ...t, photos: [...t.photos, ...newPhotos] }));
@@ -155,6 +148,11 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
   }
   function markSigned() { saveToStore('signed'); navigate('package-detail', { jobId: job.id, pkgId: pkg.id }); }
 
+  // Total hours summary for display
+  const totalReg = ticket.labor.reduce((s, r) => s + (r.reg || 0), 0);
+  const totalOt = ticket.labor.reduce((s, r) => s + (r.ot || 0), 0);
+  const totalDt = ticket.labor.reduce((s, r) => s + (r.dt || 0), 0);
+
   return (
     <div>
       <Breadcrumb items={[
@@ -165,7 +163,7 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
       ]} />
 
       <Notice type="info">
-        <strong>{pkg.num}</strong> — {pkg.title} &nbsp;·&nbsp; Package total: <strong>{fmt(pkg.tickets.reduce((s, t) => s + calcTicketTotals(t, job).grand, 0))}</strong>
+        <strong>{pkg.num}</strong> — {pkg.title} &nbsp;·&nbsp; Ticket {ticket.num}
       </Notice>
 
       {isReadOnly && <Notice type="warn">This ticket is <strong>{ticket.status}</strong> and cannot be edited.</Notice>}
@@ -173,15 +171,23 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
       {/* HEADER */}
       <div className="card">
         <div className="form-grid form-grid-2">
-          <FormGroup label="Ticket number"><Input value={ticket.num} onChange={v => setField('num', v)} disabled={isReadOnly} /></FormGroup>
-          <FormGroup label="Date"><Input type="date" value={ticket.date} onChange={v => setField('date', v)} disabled={isReadOnly} /></FormGroup>
+          <FormGroup label="Ticket number">
+            <Input value={ticket.num} onChange={v => setField('num', v)} disabled={isReadOnly} />
+          </FormGroup>
+          <FormGroup label="Date">
+            <Input type="date" value={ticket.date} onChange={v => setField('date', v)} disabled={isReadOnly} />
+          </FormGroup>
         </div>
         <FormGroup label="Description of work">
           <div style={{ display: 'flex', gap: 8 }}>
-            <div style={{ flex: 1, position: 'relative' }}>
-              <input className="form-input" list="desc-suggestions" value={ticket.desc} onChange={e => setField('desc', e.target.value)}
-                placeholder="Describe work performed — start typing for suggestions" disabled={isReadOnly} style={{ width: '100%' }} />
-              <datalist id="desc-suggestions">{prevDescs.map((d, i) => <option key={i} value={d} />)}</datalist>
+            <div style={{ flex: 1 }}>
+              <input className="form-input" list="desc-suggestions" value={ticket.desc}
+                onChange={e => setField('desc', e.target.value)}
+                placeholder="Describe work performed — start typing for suggestions"
+                disabled={isReadOnly} style={{ width: '100%' }} />
+              <datalist id="desc-suggestions">
+                {prevDescs.map((d, i) => <option key={i} value={d} />)}
+              </datalist>
             </div>
             {!isReadOnly && (
               <button className="btn" onClick={() => {
@@ -193,104 +199,79 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
         </FormGroup>
       </div>
 
-      {/* LABOR */}
+      {/* LABOR — hours only, no rates */}
       <div className="card">
         <div className="sec-hdr" style={{ borderTop: 'none', paddingTop: 0, marginTop: 0 }}>
           <div className="sec-icon sec-icon-labor"><i className="ti ti-users" /></div>
-          <div><div className="sec-title">Labor</div><div className="sec-sub">Select workers from job roster — rates auto-fill from job setup</div></div>
+          <div>
+            <div className="sec-title">Labor</div>
+            <div className="sec-sub">Select workers and enter hours — rates applied by PM during package preparation</div>
+          </div>
         </div>
         <div className="tbl-wrap">
           <table className="tbl">
-            <thead><tr>
-              <th style={{ minWidth: 160 }}>Worker</th>
-              <th style={{ width: 75 }}>Reg hrs</th>
-              <th style={{ width: 75 }}>OT (1.5x)</th>
-              <th style={{ width: 75 }}>DT (2x)</th>
-              <th style={{ width: 100 }}>Subtotal</th>
-              <th style={{ width: 36 }}></th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th style={{ minWidth: 160 }}>Worker</th>
+                <th style={{ width: 120 }}>Classification</th>
+                <th style={{ width: 85 }}>Reg hrs</th>
+                <th style={{ width: 85 }}>OT hrs</th>
+                <th style={{ width: 85 }}>DT hrs</th>
+                <th style={{ width: 36 }}></th>
+              </tr>
+            </thead>
             <tbody>
               {ticket.labor.map((row, i) => (
-                <LaborRow key={row.id || i} row={row} index={i} workers={job.workers} classifications={job.classifications} onChange={setLabor} onRemove={removeLabor} />
+                <LaborRow key={row.id || i} row={row} index={i} workers={job.workers}
+                  classifications={job.classifications} onChange={setLabor} onRemove={removeLabor} isReadOnly={isReadOnly} />
               ))}
-              {ticket.labor.length === 0 && <tr><td colSpan={6} style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', padding: '12px 10px' }}>No labor added yet.</td></tr>}
+              {ticket.labor.length === 0 && (
+                <tr><td colSpan={6} style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', padding: '12px 10px' }}>No workers added yet.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
         {ticket.labor.length > 0 && (
-          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13 }}>
-              <span style={{ color: '#888', fontWeight: 600 }}>Labor subtotal</span>
-              <span style={{ fontWeight: 700, minWidth: 90, textAlign: 'right' }}>{fmt(tots.laborBase)}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13 }}>
-              <span style={{ color: '#888', fontWeight: 600 }}>OH&P</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <input className="tbl-input" type="number" min="0" max="100" step="1" value={laborOhpPct}
-                  onChange={e => {
-                    const v = parseFloat(e.target.value) || 0;
-                    setLaborOhpOverride(v);
-                    setTicket(t => ({ ...t, labor: t.labor.map(r => ({ ...r, ohp: v })) }));
-                  }} style={{ width: 55 }} disabled={isReadOnly} />
-                <span style={{ fontSize: 12, color: '#888' }}>%</span>
-              </div>
-              <span style={{ fontWeight: 600, minWidth: 90, textAlign: 'right', color: '#888' }}>{fmt(tots.laborOhpAmt)}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13, paddingTop: 6, borderTop: '2px solid #EBF3FB' }}>
-              <span style={{ color: '#185FA5', fontWeight: 700 }}>Labor total</span>
-              <span style={{ fontWeight: 800, minWidth: 90, textAlign: 'right', color: '#185FA5' }}>{fmt(tots.laborTotal)}</span>
-            </div>
+          <div style={{ marginTop: 10, padding: '8px 12px', background: '#f8f8f6', borderRadius: 8, fontSize: 12, color: '#666', display: 'flex', gap: 20 }}>
+            <span><strong style={{ color: '#1a1a1a' }}>{totalReg}</strong> reg hrs</span>
+            <span><strong style={{ color: '#1a1a1a' }}>{totalOt}</strong> OT hrs</span>
+            <span><strong style={{ color: '#1a1a1a' }}>{totalDt}</strong> DT hrs</span>
+            <span style={{ color: '#aaa' }}>Rates & OH&P applied by PM</span>
           </div>
         )}
         {!isReadOnly && <button className="add-btn" onClick={addLabor}><i className="ti ti-plus" /> Add worker</button>}
       </div>
 
-      {/* MATERIALS */}
+      {/* MATERIALS — description and qty only */}
       <div className="card">
         <div className="sec-hdr" style={{ borderTop: 'none', paddingTop: 0, marginTop: 0 }}>
           <div className="sec-icon sec-icon-material"><i className="ti ti-package" /></div>
-          <div><div className="sec-title">Materials</div><div className="sec-sub">Attach invoices to line items for backup documentation</div></div>
+          <div>
+            <div className="sec-title">Materials</div>
+            <div className="sec-sub">Describe materials used and attach receipts — pricing added by PM</div>
+          </div>
         </div>
         <div className="tbl-wrap">
           <table className="tbl">
-            <thead><tr>
-              <th>Description</th><th style={{ width: 95 }}>Unit</th><th style={{ width: 75 }}>Qty</th>
-              <th style={{ width: 85 }}>Unit rate</th><th style={{ width: 100 }}>Subtotal</th>
-              <th style={{ width: 120 }}>Invoice</th><th style={{ width: 36 }}></th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th style={{ width: 100 }}>Unit</th>
+                <th style={{ width: 85 }}>Qty</th>
+                <th style={{ width: 120 }}>Receipt</th>
+                <th style={{ width: 36 }}></th>
+              </tr>
+            </thead>
             <tbody>
               {ticket.materials.map((row, i) => (
-                <MaterialRow key={row.id || i} row={row} index={i} onChange={setMaterial} onRemove={removeMaterial} />
+                <MaterialRow key={row.id || i} row={row} index={i} onChange={setMaterial} onRemove={removeMaterial} isReadOnly={isReadOnly} />
               ))}
-              {ticket.materials.length === 0 && <tr><td colSpan={7} style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', padding: '12px 10px' }}>No materials added yet.</td></tr>}
+              {ticket.materials.length === 0 && (
+                <tr><td colSpan={5} style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', padding: '12px 10px' }}>No materials added yet.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
-        {ticket.materials.length > 0 && (
-          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13 }}>
-              <span style={{ color: '#888', fontWeight: 600 }}>Material subtotal</span>
-              <span style={{ fontWeight: 700, minWidth: 90, textAlign: 'right' }}>{fmt(tots.matBase)}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13 }}>
-              <span style={{ color: '#888', fontWeight: 600 }}>OH&P</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <input className="tbl-input" type="number" min="0" max="100" step="1" value={matOhpPct}
-                  onChange={e => {
-                    const v = parseFloat(e.target.value) || 0;
-                    setMatOhpOverride(v);
-                    setTicket(t => ({ ...t, materials: t.materials.map(r => ({ ...r, ohp: v })) }));
-                  }} style={{ width: 55 }} disabled={isReadOnly} />
-                <span style={{ fontSize: 12, color: '#888' }}>%</span>
-              </div>
-              <span style={{ fontWeight: 600, minWidth: 90, textAlign: 'right', color: '#888' }}>{fmt(tots.matOhpAmt)}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13, paddingTop: 6, borderTop: '2px solid #E8F5DA' }}>
-              <span style={{ color: '#2A6008', fontWeight: 700 }}>Material total</span>
-              <span style={{ fontWeight: 800, minWidth: 90, textAlign: 'right', color: '#2A6008' }}>{fmt(tots.matTotal)}</span>
-            </div>
-          </div>
-        )}
         {!isReadOnly && <button className="add-btn" onClick={addMaterial}><i className="ti ti-plus" /> Add material</button>}
       </div>
 
@@ -298,38 +279,31 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
       <div className="card">
         <div className="sec-hdr" style={{ borderTop: 'none', paddingTop: 0, marginTop: 0 }}>
           <div className="sec-icon sec-icon-vendor"><i className="ti ti-users-group" /></div>
-          <div><div className="sec-title">Additional Subs / Vendors</div><div className="sec-sub">Third-party vendors or subcontractors — markup applied to their cost</div></div>
+          <div>
+            <div className="sec-title">Additional Subs / Vendors</div>
+            <div className="sec-sub">Third-party vendors or subcontractors used on this work</div>
+          </div>
         </div>
         <div className="tbl-wrap">
           <table className="tbl">
-            <thead><tr>
-              <th>Vendor / sub name</th><th>Description</th><th style={{ width: 95 }}>Amount</th>
-              <th style={{ width: 110 }}>Markup %</th><th style={{ width: 100 }}>Total</th><th style={{ width: 36 }}></th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th>Vendor / sub name</th>
+                <th>Description</th>
+                <th style={{ width: 110 }}>Amount ($)</th>
+                <th style={{ width: 36 }}></th>
+              </tr>
+            </thead>
             <tbody>
               {ticket.vendors.map((row, i) => (
-                <VendorRow key={row.id || i} row={row} index={i} onChange={setVendor} onRemove={removeVendor} />
+                <VendorRow key={row.id || i} row={row} index={i} onChange={setVendor} onRemove={removeVendor} isReadOnly={isReadOnly} />
               ))}
-              {ticket.vendors.length === 0 && <tr><td colSpan={6} style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', padding: '12px 10px' }}>No vendors added yet.</td></tr>}
+              {ticket.vendors.length === 0 && (
+                <tr><td colSpan={4} style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', padding: '12px 10px' }}>No vendors added yet.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
-        {ticket.vendors.length > 0 && (
-          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13 }}>
-              <span style={{ color: '#888', fontWeight: 600 }}>Vendor subtotal</span>
-              <span style={{ fontWeight: 700, minWidth: 90, textAlign: 'right' }}>{fmt(tots.vendorBase)}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13 }}>
-              <span style={{ color: '#888', fontWeight: 600 }}>Markup total</span>
-              <span style={{ fontWeight: 600, minWidth: 90, textAlign: 'right', color: '#888' }}>{fmt(tots.vendorOhpAmt)}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13, paddingTop: 6, borderTop: '2px solid #F2EAFC' }}>
-              <span style={{ color: '#6B21A8', fontWeight: 700 }}>Vendor total</span>
-              <span style={{ fontWeight: 800, minWidth: 90, textAlign: 'right', color: '#6B21A8' }}>{fmt(tots.vendorTotal)}</span>
-            </div>
-          </div>
-        )}
         {!isReadOnly && <button className="add-btn" onClick={addVendor}><i className="ti ti-plus" /> Add vendor / sub</button>}
       </div>
 
@@ -337,7 +311,10 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
       <div className="card">
         <div className="sec-hdr" style={{ borderTop: 'none', paddingTop: 0, marginTop: 0 }}>
           <div className="sec-icon sec-icon-photos"><i className="ti ti-camera" /></div>
-          <div><div className="sec-title">Photo Documentation</div><div className="sec-sub">Before/after photos with timestamps — optional but recommended</div></div>
+          <div>
+            <div className="sec-title">Photo Documentation</div>
+            <div className="sec-sub">Before/after photos with timestamps — optional but recommended</div>
+          </div>
         </div>
         {!isReadOnly && (
           <div className="photo-drop" onClick={() => document.getElementById('photo-upload-input').click()}>
@@ -358,19 +335,17 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
             ))}
           </div>
         )}
-      </div>
-
-      {/* GRAND TOTAL */}
-      <div className="grand-box">
-        <div className="grand-label">Ticket grand total</div>
-        <div className="grand-value">{fmt(tots.grand)}</div>
+        {ticket.photos.length === 0 && <p style={{ fontSize: 12, color: '#bbb', marginTop: 12, fontStyle: 'italic' }}>No photos attached.</p>}
       </div>
 
       {/* SIGNATURES */}
       <div className="card" style={{ marginTop: 16 }}>
         <div className="sec-hdr" style={{ borderTop: 'none', paddingTop: 0, marginTop: 0 }}>
           <div className="sec-icon sec-icon-sig"><i className="ti ti-writing" /></div>
-          <div><div className="sec-title">Signatures</div><div className="sec-sub">Foreman signs first via DocuSign, then routes to GC superintendent</div></div>
+          <div>
+            <div className="sec-title">Signatures</div>
+            <div className="sec-sub">Foreman signs first via DocuSign, then routes to GC superintendent</div>
+          </div>
         </div>
         <div className="sig-block">
           <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#FFF3DC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#8A5000', flexShrink: 0 }}>
@@ -399,7 +374,7 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
             {ticket.superName ? ticket.superName.split(' ').map(w => w[0]).join('').substr(0, 2).toUpperCase() : '?'}
           </div>
           <div className="sig-info">
-            <div className="sig-name">GC / Owner Superintendent</div>
+            <div className="sig-name">GC Superintendent</div>
             <div style={{ marginTop: 6 }}>
               <select className="form-input" style={{ maxWidth: 300 }} value={ticket.superId || ''} disabled={isReadOnly}
                 onChange={e => {
@@ -414,6 +389,7 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
           </div>
           <span className="badge badge-gray">After foreman</span>
         </div>
+
         {!isReadOnly && (
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
             <button className="btn" onClick={() => navigate('package-detail', { jobId: job.id, pkgId: pkg.id })}>Cancel</button>

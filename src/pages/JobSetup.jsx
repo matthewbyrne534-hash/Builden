@@ -12,7 +12,7 @@ export default function JobSetup({ jobId, navigate }) {
   // Classification modal
   const [showCls, setShowCls] = useState(false);
   const [editCls, setEditCls] = useState(null);
-  const [clsForm, setClsForm] = useState({ name: '', rate: '', otRate: '', dtRate: '' });
+  const [clsForm, setClsForm] = useState({ name: '', regRate: '', otRate: '', dtRate: '' });
 
   // Worker modal
   const [showWorker, setShowWorker] = useState(false);
@@ -171,7 +171,7 @@ export default function JobSetup({ jobId, navigate }) {
         footer={<><button className="btn" onClick={() => setShowCls(false)}>Cancel</button><button className="btn btn-primary" onClick={saveCls}><i className="ti ti-check" /> Save</button></>}>
         <div className="form-grid form-grid-2">
           <FormGroup label="Classification name *" span="2"><Input value={clsForm.name} onChange={v => setClsForm(f => ({ ...f, name: v }))} placeholder="e.g. Foreman, Electrician, Laborer" /></FormGroup>
-          <FormGroup label="Regular rate ($/hr) *"><Input type="number" value={clsForm.rate} onChange={v => setClsForm(f => ({ ...f, rate: v }))} placeholder="0.00" /></FormGroup>
+          <FormGroup label="Regular rate ($/hr) *"><Input type="number" value={clsForm.regRate} onChange={v => setClsForm(f => ({ ...f, regRate: v }))} placeholder="0.00" /></FormGroup>
           <FormGroup label="OT rate ($/hr)"><Input type="number" value={clsForm.otRate} onChange={v => setClsForm(f => ({ ...f, otRate: v }))} placeholder="0.00" /></FormGroup>
           <FormGroup label="DT rate ($/hr)"><Input type="number" value={clsForm.dtRate} onChange={v => setClsForm(f => ({ ...f, dtRate: v }))} placeholder="0.00" /></FormGroup>
         </div>

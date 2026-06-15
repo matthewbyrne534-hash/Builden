@@ -42,7 +42,7 @@ function AppInner() {
 
   const currentJob = state.currentJobId ? state.jobs.find(j => j.id === state.currentJobId) : null;
   const recentJobs = state.recentJobIds.map(id => state.jobs.find(j => j.id === id)).filter(Boolean);
-  const isInJob = ['job-detail', 'job-setup', 'package-detail', 'ticket-editor', 'package-preview'].includes(page);
+  const isInJob = ['job-detail', 'job-setup', 'package-detail', 'ticket-editor', 'package-preview', 'job-directory'].includes(page);
 
   const pageTitles = {
     dashboard: 'Dashboard',
@@ -51,13 +51,14 @@ function AppInner() {
     'package-detail': 'T&M Package',
     'ticket-editor': 'T&M Ticket',
     'package-preview': 'Package Preview',
-    directory: 'Directory'
+    directory: 'Directory',
+    'job-directory': 'Job Directory'
   };
 
   function renderPage() {
     switch (page) {
       case 'dashboard': return <Dashboard navigate={navigate} />;
-      case 'job-detail': return <JobDetail jobId={params.jobId} navigate={navigate} />;
+      case 'job-detail': return <JobDetail jobId={params.jobId} navigate={navigate} initialView={params.view || null} />;
       case 'job-setup': return <JobSetup jobId={params.jobId} navigate={navigate} />;
       case 'package-detail': return <PackageDetail jobId={params.jobId} pkgId={params.pkgId} navigate={navigate} />;
       case 'ticket-editor': return <TicketEditor jobId={params.jobId} pkgId={params.pkgId} ticketId={params.ticketId} navigate={navigate} />;
@@ -109,8 +110,9 @@ function AppInner() {
                       style={{ padding: '9px 14px', fontSize: 13, cursor: 'pointer', display: 'flex', flexDirection: 'column', borderBottom: '1px solid #f2f2f0' }}
                       onMouseEnter={e => e.currentTarget.style.background = '#f4f4f2'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                      <span style={{ fontWeight: 600 }}>{j.name}</span>
-                      <span style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{j.num} · {j.gc}</span>
+                      <span style={{ fontWeight: 800, fontSize: 14, color: '#185FA5' }}>{j.num}</span>
+                      <span style={{ fontSize: 12, color: '#444', marginTop: 1, fontWeight: 600 }}>{j.name}</span>
+                      <span style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>{j.gc}</span>
                     </div>
                   ))}
                   <div style={{ borderTop: '1px solid #e8e8e6', padding: '8px 14px' }}>
@@ -133,13 +135,13 @@ function AppInner() {
                 {showJobMenu && (
                   <div style={{ position: 'absolute', left: 0, top: '110%', background: '#fff', border: '1px solid #e8e8e6', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 200, minWidth: 200, overflow: 'hidden' }}>
                     <div style={{ padding: '8px 14px 6px', fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5 }}>{currentJob.name}</div>
-                    <div onClick={() => { navigate('job-detail', { jobId: currentJob.id }); setShowJobMenu(false); }}
+                    <div onClick={() => { navigate('job-detail', { jobId: currentJob.id, view: 'packages' }); setShowJobMenu(false); }}
                       style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, borderTop: '1px solid #f2f2f0' }}
                       onMouseEnter={e => e.currentTarget.style.background = '#f4f4f2'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       <i className="ti ti-folders" style={{ color: '#185FA5' }} /> T&M Packages
                     </div>
-                    <div onClick={() => { navigate('directory'); setShowJobMenu(false); }}
+                    <div onClick={() => { navigate('job-detail', { jobId: currentJob.id, view: 'directory' }); setShowJobMenu(false); }}
                       style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
                       onMouseEnter={e => e.currentTarget.style.background = '#f4f4f2'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>

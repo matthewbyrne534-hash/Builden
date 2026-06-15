@@ -1,90 +1,171 @@
 // src/pages/Dashboard.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../data/store';
 import { fmt, calcPackageTotals } from '../utils/helpers';
-import { EmptyState } from '../components/UI';
+import { Modal, FormGroup, Input } from '../components/UI';
+import { genId } from '../utils/helpers';
 
 export default function Dashboard({ navigate }) {
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const { jobs } = state;
+  const [search, setSearch] = useState('');
+  const [showNew, setShowNew] = useState(false);
+  const [form, setForm] = useState({ name: '', num: '', address: '', city: '', state: '', zip: '', gc: '', owner: '', ae: '' });
 
-  let totalExecuted = 0, totalPending = 0, totalOpen = 0;
+  // Summary metrics across all jobs
+  let totalOpenVal = 0, totalOpenPkgs = 0;
+  let totalPendingVal = 0, totalPendingPkgs = 0;
+  let totalExecutedVal = 0, totalExecutedPkgs = 0;
+
   jobs.forEach(j => {
     j.packages.forEach(p => {
-      const tots = calcPackageTotals(p, j);
-      totalExecuted += tots.executed;
-      if (p.tickets.some(t => t.status === 'submitted')) totalPending += tots.grand;
-      if (p.tickets.some(t => ['draft', 'pending-sig'].includes(t.status))) totalOpen++;
+      const tots = calcPackageTotals(p);
+      const isOpen = p.tickets.some(t => ['draft', 'pending-sig'].includes(t.status));
+      const isPending = p.tickets.some(t => t.status === 'submitted');
+      const isExecuted = p.tickets.length > 0 && p.tickets.every(t => ['signed', 'approved'].includes(t.status));
+      if (isOpen) { totalOpenVal += tots.grand; totalOpenPkgs++; }
+      if (isPending) { totalPendingVal += tots.grand; totalPendingPkgs++; }
+      if (isExecuted) { totalExecutedVal += tots.executed; totalExecutedPkgs++; }
     });
   });
 
+  const filtered = jobs.filter(j =>
+    (j.name + j.num + j.address + j.city + j.gc).toLowerCase().includes(search.toLowerCase())
+  );
+
+  function createJob() {
+    if (!form.name || !form.num) return alert('Job name and number are required.');
+    const job = {
+      id: genId(), name: form.name, num: form.num, address: form.address, city: form.city,
+      state: form.state, zip: form.zip, gc: form.gc, owner: form.owner, ae: form.ae,
+      supers: [], classifications: [], workers: [], packages: []
+    };
+    dispatch({ type: 'ADD_JOB', job });
+    dispatch({ type: 'SET_CURRENT_JOB', id: job.id });
+    setShowNew(false);
+    setForm({ name: '', num: '', address: '', city: '', state: '', zip: '', gc: '', owner: '', ae: '' });
+    navigate('job-setup', { jobId: job.id });
+  }
+
+  function openJob(jobId) {
+    dispatch({ type: 'SET_CURRENT_JOB', id: jobId });
+    navigate('job-detail', { jobId });
+  }
+
   return (
     <div>
+      {/* SUMMARY METRICS */}
       <div className="metrics">
         <div className="metric">
           <div className="metric-label">Active Jobs</div>
-          <div className="metric-value">{jobs.filter(j => !j.voided).length}</div>
-          <div className="metric-sub">{totalOpen > 0 ? `${totalOpen} open package${totalOpen !== 1 ? 's' : ''}` : 'All packages closed'}</div>
+          <div className="metric-value">{jobs.length}</div>
+          <div className="metric-sub">{jobs.reduce((s, j) => s + j.packages.length, 0)} total packages</div>
         </div>
         <div className="metric">
-          <div className="metric-label">Open Packages</div>
-          <div className="metric-value">{totalOpen}</div>
-          <div className="metric-sub metric-sub blue">In progress</div>
+          <div className="metric-label">Open / In Progress</div>
+          <div className="metric-value">{fmt(totalOpenVal)}</div>
+          <div className="metric-sub" style={{ color: '#185FA5' }}>{totalOpenPkgs} pkg{totalOpenPkgs !== 1 ? 's' : ''} open</div>
         </div>
         <div className="metric">
           <div className="metric-label">Pending GC Approval</div>
-          <div className="metric-value">{fmt(totalPending)}</div>
-          <div className="metric-sub">Submitted packages</div>
+          <div className="metric-value">{fmt(totalPendingVal)}</div>
+          <div className="metric-sub" style={{ color: '#8A5000' }}>{totalPendingPkgs} pkg{totalPendingPkgs !== 1 ? 's' : ''} submitted</div>
         </div>
         <div className="metric">
           <div className="metric-label">Executed Value</div>
-          <div className="metric-value">{fmt(totalExecuted)}</div>
-          <div className="metric-sub">Fully signed & approved</div>
+          <div className="metric-value">{fmt(totalExecutedVal)}</div>
+          <div className="metric-sub" style={{ color: '#2A6008' }}>{totalExecutedPkgs} pkg{totalExecutedPkgs !== 1 ? 's' : ''} approved</div>
         </div>
       </div>
 
+      {/* JOB TABLE */}
       <div className="card">
         <div className="card-header">
           <div className="card-header-left">
-            <div className="card-title">Active Jobs</div>
+            <div className="card-title">All Jobs</div>
+          </div>
+          <div className="card-actions">
+            <div className="search-wrap" style={{ marginBottom: 0 }}>
+              <i className="ti ti-search search-icon" />
+              <input className="search-input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search jobs..." style={{ width: 200 }} />
+            </div>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowNew(true)}>
+              <i className="ti ti-plus" /> New job
+            </button>
           </div>
         </div>
 
-        {jobs.length === 0 ? (
-          <EmptyState icon="building" message="No jobs yet. Create your first job to get started." />
-        ) : (
-          jobs.map(j => {
-            const openPkgs = j.packages.filter(p => p.tickets.some(t => ['draft', 'pending-sig'].includes(t.status)));
-            const openVal = openPkgs.reduce((s, p) => s + calcPackageTotals(p, j).grand, 0);
-            const pendingPkgs = j.packages.filter(p => p.tickets.some(t => t.status === 'submitted'));
-            const pendingVal = pendingPkgs.reduce((s, p) => s + calcPackageTotals(p, j).grand, 0);
-            const executedPkgs = j.packages.filter(p => p.tickets.length > 0 && p.tickets.every(t => ['signed', 'approved'].includes(t.status)));
-            const executedVal = j.packages.reduce((s, p) => s + calcPackageTotals(p, j).executed, 0);
-            return (
-              <div key={j.id} className="list-row clickable" onClick={() => navigate('job-detail', { jobId: j.id })}>
-                <div className="row-body">
-                  <div className="row-title">{j.num} — {j.desc}</div>
-                  <div className="row-sub">{j.gc}</div>
-                </div>
-                <div style={{ display: 'flex', gap: 20, marginRight: 12 }}>
-                  <div className="row-right">
-                    <div className="row-amount" style={{ color: '#666' }}>{fmt(openVal)}</div>
-                    <div className="row-meta" style={{ color: '#185FA5' }}>{openPkgs.length} pkg{openPkgs.length !== 1 ? 's' : ''} open</div>
-                  </div>
-                  <div className="row-right">
-                    <div className="row-amount" style={{ color: '#8A5000' }}>{fmt(pendingVal)}</div>
-                    <div className="row-meta" style={{ color: '#8A5000' }}>{pendingPkgs.length} pkg{pendingPkgs.length !== 1 ? 's' : ''} pending GC</div>
-                  </div>
-                  <div className="row-right">
-                    <div className="row-amount" style={{ color: '#2A6008' }}>{fmt(executedVal)}</div>
-                    <div className="row-meta" style={{ color: '#2A6008' }}>{executedPkgs.length} pkg{executedPkgs.length !== 1 ? 's' : ''} executed</div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#fafaf8' }}>
+                <th style={{ textAlign: 'left', padding: '9px 12px', borderBottom: '2px solid #e8e8e6', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>Job Name</th>
+                <th style={{ textAlign: 'left', padding: '9px 12px', borderBottom: '2px solid #e8e8e6', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>Job #</th>
+                <th style={{ textAlign: 'left', padding: '9px 12px', borderBottom: '2px solid #e8e8e6', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>Address</th>
+                <th style={{ textAlign: 'left', padding: '9px 12px', borderBottom: '2px solid #e8e8e6', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.4px' }}>City</th>
+                <th style={{ textAlign: 'left', padding: '9px 12px', borderBottom: '2px solid #e8e8e6', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.4px' }}>State</th>
+                <th style={{ textAlign: 'left', padding: '9px 12px', borderBottom: '2px solid #e8e8e6', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.4px' }}>ZIP</th>
+                <th style={{ textAlign: 'right', padding: '9px 12px', borderBottom: '2px solid #e8e8e6', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>Open</th>
+                <th style={{ textAlign: 'right', padding: '9px 12px', borderBottom: '2px solid #e8e8e6', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>Pending GC</th>
+                <th style={{ textAlign: 'right', padding: '9px 12px', borderBottom: '2px solid #e8e8e6', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Executed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={9} style={{ padding: '24px 12px', textAlign: 'center', color: '#aaa', fontStyle: 'italic' }}>No jobs found.</td></tr>
+              ) : filtered.map(j => {
+                const openPkgs = j.packages.filter(p => p.tickets.some(t => ['draft', 'pending-sig'].includes(t.status)));
+                const openVal = openPkgs.reduce((s, p) => s + calcPackageTotals(p).grand, 0);
+                const pendingPkgs = j.packages.filter(p => p.tickets.some(t => t.status === 'submitted'));
+                const pendingVal = pendingPkgs.reduce((s, p) => s + calcPackageTotals(p).grand, 0);
+                const executedPkgs = j.packages.filter(p => p.tickets.length > 0 && p.tickets.every(t => ['signed', 'approved'].includes(t.status)));
+                const executedVal = j.packages.reduce((s, p) => s + calcPackageTotals(p).executed, 0);
+                return (
+                  <tr key={j.id} style={{ borderBottom: '1px solid #f2f2f0', cursor: 'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#fafaf8'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    onClick={() => openJob(j.id)}>
+                    <td style={{ padding: '10px 12px', fontWeight: 700, color: '#185FA5', whiteSpace: 'nowrap' }}>{j.name}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12, color: '#666' }}>{j.num}</td>
+                    <td style={{ padding: '10px 12px', color: '#555', whiteSpace: 'nowrap' }}>{j.address}</td>
+                    <td style={{ padding: '10px 12px', color: '#555' }}>{j.city}</td>
+                    <td style={{ padding: '10px 12px', color: '#555' }}>{j.state}</td>
+                    <td style={{ padding: '10px 12px', color: '#555' }}>{j.zip}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                      <div style={{ fontWeight: 600, color: '#444' }}>{fmt(openVal)}</div>
+                      <div style={{ fontSize: 11, color: '#185FA5', fontWeight: 600 }}>{openPkgs.length} pkg{openPkgs.length !== 1 ? 's' : ''}</div>
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                      <div style={{ fontWeight: 600, color: '#8A5000' }}>{fmt(pendingVal)}</div>
+                      <div style={{ fontSize: 11, color: '#8A5000', fontWeight: 600 }}>{pendingPkgs.length} pkg{pendingPkgs.length !== 1 ? 's' : ''}</div>
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                      <div style={{ fontWeight: 600, color: '#2A6008' }}>{fmt(executedVal)}</div>
+                      <div style={{ fontSize: 11, color: '#2A6008', fontWeight: 600 }}>{executedPkgs.length} pkg{executedPkgs.length !== 1 ? 's' : ''}</div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* NEW JOB MODAL */}
+      <Modal open={showNew} onClose={() => setShowNew(false)} title="New Job" wide
+        footer={<><button className="btn" onClick={() => setShowNew(false)}>Cancel</button><button className="btn btn-primary" onClick={createJob}><i className="ti ti-plus" /> Create job</button></>}>
+        <div className="form-grid form-grid-2">
+          <FormGroup label="Job name *"><Input value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} placeholder="e.g. Riverside Trade School" /></FormGroup>
+          <FormGroup label="Job number *"><Input value={form.num} onChange={v => setForm(f => ({ ...f, num: v }))} placeholder="e.g. 261047" /></FormGroup>
+          <FormGroup label="Address"><Input value={form.address} onChange={v => setForm(f => ({ ...f, address: v }))} placeholder="Street address" /></FormGroup>
+          <FormGroup label="City"><Input value={form.city} onChange={v => setForm(f => ({ ...f, city: v }))} placeholder="City" /></FormGroup>
+          <FormGroup label="State"><Input value={form.state} onChange={v => setForm(f => ({ ...f, state: v }))} placeholder="NY" /></FormGroup>
+          <FormGroup label="ZIP"><Input value={form.zip} onChange={v => setForm(f => ({ ...f, zip: v }))} placeholder="12205" /></FormGroup>
+          <FormGroup label="General contractor"><Input value={form.gc} onChange={v => setForm(f => ({ ...f, gc: v }))} /></FormGroup>
+          <FormGroup label="Owner"><Input value={form.owner} onChange={v => setForm(f => ({ ...f, owner: v }))} /></FormGroup>
+          <FormGroup label="Architect / engineer" span="2"><Input value={form.ae} onChange={v => setForm(f => ({ ...f, ae: v }))} /></FormGroup>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -2,28 +2,26 @@
 import React, { useState } from 'react';
 import { useStore } from '../data/store';
 import { genId, initials } from '../utils/helpers';
-import { Breadcrumb, Modal, FormGroup, Input, Select, ConfirmModal, SearchBar } from '../components/UI';
+import { Breadcrumb, Modal, FormGroup, Input, Select, ConfirmModal } from '../components/UI';
 
 export default function JobSetup({ jobId, navigate }) {
   const { state, dispatch } = useStore();
   const job = state.jobs.find(j => j.id === jobId);
 
-  const [info, setInfo] = useState({ name: job?.name || '', num: job?.num || '', address: job?.address || '', city: job?.city || '', state: job?.state || '', zip: job?.zip || '', gc: job?.gc || '', owner: job?.owner || '', ae: job?.ae || '' });
-  // Classification modal
+  const [info, setInfo] = useState({
+    name: job?.name || '', num: job?.num || '', address: job?.address || '',
+    city: job?.city || '', state: job?.state || '', zip: job?.zip || '',
+    gc: job?.gc || '', owner: job?.owner || '', ae: job?.ae || ''
+  });
+
   const [showCls, setShowCls] = useState(false);
   const [editCls, setEditCls] = useState(null);
   const [clsForm, setClsForm] = useState({ name: '', regRate: '', otRate: '', dtRate: '' });
 
-  // Worker modal
   const [showWorker, setShowWorker] = useState(false);
   const [editWorker, setEditWorker] = useState(null);
   const [workerForm, setWorkerForm] = useState({ first: '', last: '', classId: '' });
 
-  // Super modal
-  const [showSuper, setShowSuper] = useState(false);
-  const [selectedDirContact, setSelectedDirContact] = useState(null);
-  const [superSearch, setSuperSearch] = useState('');
-  const [confirmRemoveSuper, setConfirmRemoveSuper] = useState(null);
   const [confirmRemoveCls, setConfirmRemoveCls] = useState(null);
   const [confirmRemoveWorker, setConfirmRemoveWorker] = useState(null);
 
@@ -31,17 +29,20 @@ export default function JobSetup({ jobId, navigate }) {
 
   function saveInfo() {
     dispatch({ type: 'UPDATE_JOB', id: job.id, data: { name: info.name, num: info.num, address: info.address, city: info.city, state: info.state, zip: info.zip, gc: info.gc, owner: info.owner, ae: info.ae } });
-    navigate('job-detail', { jobId: job.id });
+    navigate('job-detail', { jobId: job.id, view: 'packages' });
+  }
+
+  function cancel() {
+    navigate('job-detail', { jobId: job.id, view: 'packages' });
   }
 
   // Classifications
-  function openAddCls() { setClsForm({ name: '', rate: '', otRate: '', dtRate: '' }); setEditCls(null); setShowCls(true); }
-  function openEditCls(cls) { setClsForm({ name: cls.name, rate: String(cls.rate), otRate: String(cls.otRate || ''), dtRate: String(cls.dtRate || '') }); setEditCls(cls); setShowCls(true); }
+  function openAddCls() { setClsForm({ name: '', regRate: '', otRate: '', dtRate: '' }); setEditCls(null); setShowCls(true); }
+  function openEditCls(cls) { setClsForm({ name: cls.name, regRate: String(cls.regRate || ''), otRate: String(cls.otRate || ''), dtRate: String(cls.dtRate || '') }); setEditCls(cls); setShowCls(true); }
   function saveCls() {
     if (!clsForm.name || !clsForm.regRate) return alert('Name and regular rate are required.');
     const cls = { id: editCls?.id || genId(), name: clsForm.name, regRate: parseFloat(clsForm.regRate) || 0, otRate: parseFloat(clsForm.otRate) || 0, dtRate: parseFloat(clsForm.dtRate) || 0 };
-    if (editCls) { dispatch({ type: 'UPDATE_CLASSIFICATION', jobId: job.id, cls }); }
-    else { dispatch({ type: 'ADD_CLASSIFICATION', jobId: job.id, cls }); }
+    dispatch({ type: editCls ? 'UPDATE_CLS' : 'ADD_CLS', jobId: job.id, cls });
     setShowCls(false);
   }
 
@@ -51,29 +52,15 @@ export default function JobSetup({ jobId, navigate }) {
   function saveWorker() {
     if (!workerForm.first || !workerForm.last) return alert('First and last name are required.');
     const worker = { id: editWorker?.id || genId(), first: workerForm.first, last: workerForm.last, classId: workerForm.classId };
-    if (editWorker) { dispatch({ type: 'UPDATE_WORKER', jobId: job.id, worker }); }
-    else { dispatch({ type: 'ADD_WORKER', jobId: job.id, worker }); }
+    dispatch({ type: editWorker ? 'UPDATE_WORKER' : 'ADD_WORKER', jobId: job.id, worker });
     setShowWorker(false);
   }
-
-  // Superintendents
-  function openSuperModal() { setSelectedDirContact(null); setSuperSearch(''); setShowSuper(true); }
-  function saveSuper() {
-    if (!selectedDirContact) return alert('Please select a contact from the directory.');
-    const c = state.directory.contacts.find(x => x.id === selectedDirContact);
-    if (c) dispatch({ type: 'ADD_SUPER', jobId: job.id, super: { id: genId(), name: c.first + ' ' + c.last, email: c.email, phone: c.phone } });
-    setShowSuper(false);
-  }
-
-  const filteredDirContacts = state.directory.contacts.filter(c =>
-    (c.first + ' ' + c.last + c.email).toLowerCase().includes(superSearch.toLowerCase())
-  );
 
   return (
     <div>
       <Breadcrumb items={[
-        { label: 'Jobs', onClick: () => navigate('jobs') },
-        { label: job.num, onClick: () => navigate('job-detail', { jobId: job.id }) },
+        { label: 'Dashboard', onClick: () => navigate('dashboard') },
+        { label: job.num, onClick: () => navigate('job-detail', { jobId: job.id, view: 'packages' }) },
         { label: 'Job Setup' }
       ]} />
 
@@ -93,33 +80,21 @@ export default function JobSetup({ jobId, navigate }) {
         </div>
       </div>
 
-      {/* SUPERINTENDENTS */}
-      <div className="card">
-        <div className="card-header">
-          <div className="card-header-left"><div className="card-title">Superintendents</div><div className="card-subtitle">GC field supervisors who sign T&M tickets</div></div>
-          <div className="card-actions"><button className="btn btn-sm" onClick={openSuperModal}><i className="ti ti-plus" /> Add superintendent</button></div>
-        </div>
-        {job.supers.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0' }}>No superintendents added yet.</p> : (
-          job.supers.map(s => (
-            <div key={s.id} className="list-row">
-              <div className="row-icon">{initials(s.name)}</div>
-              <div className="row-body"><div className="row-title">{s.name}</div><div className="row-sub">{s.email}{s.phone ? ' · ' + s.phone : ''}</div></div>
-              <div className="row-actions"><button className="btn btn-icon btn-sm btn-danger" onClick={() => setConfirmRemoveSuper(s)}><i className="ti ti-trash" /></button></div>
-            </div>
-          ))
-        )}
-      </div>
-
       {/* CLASSIFICATIONS */}
       <div className="card">
         <div className="card-header">
-          <div className="card-header-left"><div className="card-title">Labor Classifications &amp; Rates</div><div className="card-subtitle">These rates auto-fill on T&M tickets</div></div>
+          <div className="card-header-left">
+            <div className="card-title">Labor Classifications &amp; Rates</div>
+            <div className="card-subtitle">Rates applied when PM prepares the package</div>
+          </div>
           <div className="card-actions"><button className="btn btn-sm" onClick={openAddCls}><i className="ti ti-plus" /> Add classification</button></div>
         </div>
-        {job.classifications.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0' }}>No classifications added yet.</p> : (
+        {job.classifications.length === 0 ? (
+          <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0' }}>No classifications added yet.</p>
+        ) : (
           <div className="tbl-wrap">
             <table className="tbl">
-              <thead><tr><th>Classification</th><th>Regular rate</th><th>OT rate (1.5x)</th><th>DT rate (2x)</th><th>OH&P %</th><th style={{ width: 80 }}></th></tr></thead>
+              <thead><tr><th>Classification</th><th>Regular rate</th><th>OT rate</th><th>DT rate</th><th style={{ width: 80 }}></th></tr></thead>
               <tbody>
                 {job.classifications.map(c => (
                   <tr key={c.id}>
@@ -141,19 +116,27 @@ export default function JobSetup({ jobId, navigate }) {
         )}
       </div>
 
-      {/* WORKERS */}
+      {/* PERSONNEL ROSTER */}
       <div className="card">
         <div className="card-header">
-          <div className="card-header-left"><div className="card-title">Personnel Roster</div><div className="card-subtitle">Workers available for selection on field tickets</div></div>
+          <div className="card-header-left">
+            <div className="card-title">Personnel Roster</div>
+            <div className="card-subtitle">Field workers the foreman selects from when filling out T&M tickets — not platform users</div>
+          </div>
           <div className="card-actions"><button className="btn btn-sm" onClick={openAddWorker}><i className="ti ti-plus" /> Add worker</button></div>
         </div>
-        {job.workers.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0' }}>No workers added yet.</p> : (
+        {job.workers.length === 0 ? (
+          <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0' }}>No workers added yet.</p>
+        ) : (
           job.workers.map(w => {
             const cls = job.classifications.find(c => c.id === w.classId);
             return (
               <div key={w.id} className="list-row">
                 <div className="row-icon">{initials(w.first + ' ' + w.last)}</div>
-                <div className="row-body"><div className="row-title">{w.first} {w.last}</div><div className="row-sub">{cls ? cls.name + ' · $' + (cls.regRate || 0).toFixed(2) + '/hr' : 'No classification'}</div></div>
+                <div className="row-body">
+                  <div className="row-title">{w.first} {w.last}</div>
+                  <div className="row-sub">{cls ? cls.name : 'No classification'}</div>
+                </div>
                 <div className="row-actions">
                   <button className="btn btn-icon btn-sm" onClick={() => openEditWorker(w)}><i className="ti ti-edit" /></button>
                   <button className="btn btn-icon btn-sm btn-danger" onClick={() => setConfirmRemoveWorker(w)}><i className="ti ti-trash" /></button>
@@ -166,7 +149,7 @@ export default function JobSetup({ jobId, navigate }) {
 
       {/* SAVE FOOTER */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-        <button className="btn" onClick={() => navigate('job-detail', { jobId: job.id })}>Cancel</button>
+        <button className="btn" onClick={cancel}>Cancel</button>
         <button className="btn btn-primary" onClick={saveInfo}><i className="ti ti-check" /> Save job setup</button>
       </div>
 
@@ -189,45 +172,16 @@ export default function JobSetup({ jobId, navigate }) {
           <FormGroup label="Last name *"><Input value={workerForm.last} onChange={v => setWorkerForm(f => ({ ...f, last: v }))} placeholder="Last" /></FormGroup>
           <FormGroup label="Classification" span="2">
             <Select value={workerForm.classId} onChange={v => setWorkerForm(f => ({ ...f, classId: v }))}
-              options={job.classifications.map(c => ({ value: c.id, label: c.name + ' — $' + (c.regRate || 0).toFixed(2) + '/hr' }))}
-              placeholder="— Select classification —" />
+              options={job.classifications.map(c => ({ value: c.id, label: c.name + ' - $' + (c.regRate || 0).toFixed(2) + '/hr' }))}
+              placeholder="- Select classification -" />
           </FormGroup>
         </div>
       </Modal>
 
-      {/* SUPERINTENDENT MODAL */}
-      <Modal open={showSuper} onClose={() => setShowSuper(false)} title="Add Superintendent"
-        footer={<><button className="btn" onClick={() => setShowSuper(false)}>Cancel</button><button className="btn btn-primary" onClick={saveSuper}><i className="ti ti-check" /> Add to job</button></>}>
-        <SearchBar value={superSearch} onChange={setSuperSearch} placeholder="Search directory contacts..." />
-        <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-          {filteredDirContacts.length === 0 ? (
-            <p style={{ color: '#aaa', fontSize: 13, padding: 12 }}>No contacts found in directory. Add contacts in the Directory section first.</p>
-          ) : (
-            filteredDirContacts.map(c => {
-              const co = state.directory.companies.find(x => x.id === c.companyId);
-              const selected = selectedDirContact === c.id;
-              return (
-                <div key={c.id} className="list-row clickable" onClick={() => setSelectedDirContact(c.id)}
-                  style={{ background: selected ? '#EBF3FB' : 'transparent', borderRadius: 8, padding: '10px 8px' }}>
-                  <div className="row-icon">{initials(c.first + ' ' + c.last)}</div>
-                  <div className="row-body">
-                    <div className="row-title">{c.first} {c.last} {selected && <i className="ti ti-check" style={{ color: '#185FA5', marginLeft: 4 }} />}</div>
-                    <div className="row-sub">{c.title}{co ? ' · ' + co.name : ''}</div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </Modal>
-
       {/* CONFIRM MODALS */}
-      <ConfirmModal open={!!confirmRemoveSuper} onClose={() => setConfirmRemoveSuper(null)} title="Remove superintendent"
-        message={`Remove ${confirmRemoveSuper?.name} from this job?`} danger
-        onConfirm={() => { dispatch({ type: 'REMOVE_SUPER', jobId: job.id, superId: confirmRemoveSuper.id }); setConfirmRemoveSuper(null); }} />
       <ConfirmModal open={!!confirmRemoveCls} onClose={() => setConfirmRemoveCls(null)} title="Remove classification"
         message={`Remove "${confirmRemoveCls?.name}" from this job?`} danger
-        onConfirm={() => { dispatch({ type: 'REMOVE_CLASSIFICATION', jobId: job.id, clsId: confirmRemoveCls.id }); setConfirmRemoveCls(null); }} />
+        onConfirm={() => { dispatch({ type: 'REMOVE_CLS', jobId: job.id, clsId: confirmRemoveCls.id }); setConfirmRemoveCls(null); }} />
       <ConfirmModal open={!!confirmRemoveWorker} onClose={() => setConfirmRemoveWorker(null)} title="Remove worker"
         message={`Remove ${confirmRemoveWorker?.first} ${confirmRemoveWorker?.last} from this job?`} danger
         onConfirm={() => { dispatch({ type: 'REMOVE_WORKER', jobId: job.id, workerId: confirmRemoveWorker.id }); setConfirmRemoveWorker(null); }} />

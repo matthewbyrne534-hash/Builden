@@ -8,7 +8,7 @@ export default function JobSetup({ jobId, navigate }) {
   const { state, dispatch } = useStore();
   const job = state.jobs.find(j => j.id === jobId);
 
-  const [info, setInfo] = useState({ num: job?.num || '', desc: job?.desc || '', gc: job?.gc || '', owner: job?.owner || '', ae: job?.ae || '' });
+  const [info, setInfo] = useState({ name: job?.name || '', num: job?.num || '', address: job?.address || '', city: job?.city || '', state: job?.state || '', zip: job?.zip || '', gc: job?.gc || '', owner: job?.owner || '', ae: job?.ae || '' });
   // Classification modal
   const [showCls, setShowCls] = useState(false);
   const [editCls, setEditCls] = useState(null);
@@ -30,7 +30,7 @@ export default function JobSetup({ jobId, navigate }) {
   if (!job) return <div className="card"><p style={{ color: '#999' }}>Job not found.</p></div>;
 
   function saveInfo() {
-    dispatch({ type: 'UPDATE_JOB', id: job.id, data: { num: info.num, desc: info.desc, gc: info.gc, owner: info.owner, ae: info.ae } });
+    dispatch({ type: 'UPDATE_JOB', id: job.id, data: { name: info.name, num: info.num, address: info.address, city: info.city, state: info.state, zip: info.zip, gc: info.gc, owner: info.owner, ae: info.ae } });
     navigate('job-detail', { jobId: job.id });
   }
 

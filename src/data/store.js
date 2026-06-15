@@ -49,12 +49,12 @@ const initialState = {
       gc: 'Northeast Contracting', owner: 'Capitol Hotel Group', ae: 'LaBella Associates',
       supers: [{ id: 's4', name: 'P. Sullivan', email: 'psullivan@nec.com', phone: '(518) 555-0445' }],
       classifications: [{ id: 'c8', name: 'Foreman', regRate: 95, otRate: 142.50, dtRate: 190 }, { id: 'c9', name: 'Electrician', regRate: 76, otRate: 114, dtRate: 152 }],
-      workers: [{ id: 'w7', first: 'Ray', last: 'Diaz', classId: 'c8' }, { id: 'w8', first: 'Pat', last: 'O'Brien', classId: 'c9' }],
+      workers: [{ id: 'w7', first: 'Ray', last: 'Diaz', classId: 'c8' }, { id: 'w8', first: 'Pat', last: 'OBrien', classId: 'c9' }],
       packages: [
         { id: 'p7', num: 'TM-001', numSystem: 'TM-{seq}', title: 'Guestroom lighting upgrade — Floors 3-5', authType: 'Authorization Email', authRef: '', authFileName: null, prepSettings: null,
           tickets: [{ id: 't7', num: 'TM-001.1', date: '2026-03-09', desc: 'Replaced lighting fixtures in guestrooms floors 3 through 5.', labor: [{ id: 'l7', workerId: 'w7', workerName: 'Ray Diaz', classId: 'c8', className: 'Foreman', reg: 8, ot: 0, dt: 0, regRate: 95, otRate: 142.50, dtRate: 190 }], materials: [], vendors: [], photos: [], foremanId: 'w7', foremanName: 'Ray Diaz', superId: 's4', superName: 'P. Sullivan', status: 'draft' }] },
         { id: 'p8', num: 'TM-002', numSystem: 'TM-{seq}', title: 'Emergency generator connection', authType: 'Change Event', authRef: 'CE-031', authFileName: null, prepSettings: null,
-          tickets: [{ id: 't8', num: 'TM-002.1', date: '2026-03-15', desc: 'Connected emergency generator to main electrical panel.', labor: [{ id: 'l8', workerId: 'w8', workerName: 'Pat O'Brien', classId: 'c9', className: 'Electrician', reg: 10, ot: 2, dt: 0, regRate: 76, otRate: 114, dtRate: 152 }], materials: [], vendors: [], photos: [], foremanId: 'w8', foremanName: 'Pat O'Brien', superId: 's4', superName: 'P. Sullivan', status: 'pending-sig' }] }
+          tickets: [{ id: 't8', num: 'TM-002.1', date: '2026-03-15', desc: 'Connected emergency generator to main electrical panel.', labor: [{ id: 'l8', workerId: 'w8', workerName: 'Pat OBrien', classId: 'c9', className: 'Electrician', reg: 10, ot: 2, dt: 0, regRate: 76, otRate: 114, dtRate: 152 }], materials: [], vendors: [], photos: [], foremanId: 'w8', foremanName: 'Pat O'Brien', superId: 's4', superName: 'P. Sullivan', status: 'pending-sig' }] }
       ]
     },
     {

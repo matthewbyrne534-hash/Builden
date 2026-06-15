@@ -7,7 +7,7 @@ import { Breadcrumb, Badge, Modal, FormGroup, Input, Select, EmptyState, Confirm
 export default function JobDetail({ jobId, navigate, initialView }) {
   const { state, dispatch } = useStore();
   const job = state.jobs.find(j => j.id === jobId);
-  const [view, setView] = useState(initialView || null); // null = summary only, 'packages', 'directory'
+  const view = initialView || null; // null = summary only, 'packages', 'directory'
   const [showNewPkg, setShowNewPkg] = useState(false);
   const [editPkg, setEditPkg] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);

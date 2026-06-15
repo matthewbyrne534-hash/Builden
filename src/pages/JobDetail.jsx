@@ -2,13 +2,18 @@
 import React, { useState } from 'react';
 import { useStore } from '../data/store';
 import { genId, fmt, calcPackageTotals, pkgStatusInfo, buildPkgNum, AUTH_TYPES, initials } from '../utils/helpers';
-import { Breadcrumb, Badge, Modal, FormGroup, Input, Select, EmptyState, ConfirmModal } from '../components/UI';
+import { Breadcrumb, Badge, Modal, FormGroup, Input, Select, EmptyState, ConfirmModal, Tabs, SearchBar } from '../components/UI';
 
 export default function JobDetail({ jobId, navigate, initialView }) {
   const { state, dispatch } = useStore();
   const job = state.jobs.find(j => j.id === jobId);
   const view = initialView || null; // null = summary only, 'packages', 'directory'
   const [showNewPkg, setShowNewPkg] = useState(false);
+  const [showAddSuper, setShowAddSuper] = useState(false);
+  const [superForm, setSuperForm] = useState({ name: '', email: '', phone: '' });
+  const [superSearch, setSuperSearch] = useState('');
+  const [selectedDirContact, setSelectedDirContact] = useState(null);
+  const [superTab, setSuperTab] = useState('dir');
   const [editPkg, setEditPkg] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [pkgForm, setPkgForm] = useState({ title: '', authType: 'Change Event', authRef: '', authFileName: null, numSystem: 'TM-{seq}', customNum: '' });
@@ -137,17 +142,17 @@ export default function JobDetail({ jobId, navigate, initialView }) {
             <div className="card-header">
               <div className="card-header-left">
                 <div className="card-title">Superintendents</div>
-                <div className="card-subtitle">GC field supervisors on {job.num}</div>
+                <div className="card-subtitle">GC field supervisors who sign T&M tickets for {job.num}</div>
               </div>
-              <button className="btn btn-sm" onClick={() => navigate('job-setup', { jobId: job.id })}>
-                <i className="ti ti-settings" /> Manage
+              <button className="btn btn-primary btn-sm" onClick={() => { setSuperTab('dir'); setSelectedDirContact(null); setSuperForm({ name: '', email: '', phone: '' }); setShowAddSuper(true); }}>
+                <i className="ti ti-plus" /> Add superintendent
               </button>
             </div>
             {job.supers.length === 0 ? (
-              <div style={{ color: '#aaa', fontSize: 13, padding: '12px 0', fontStyle: 'italic' }}>No superintendents assigned. Add them in Job Setup.</div>
+              <div style={{ color: '#aaa', fontSize: 13, padding: '12px 0', fontStyle: 'italic' }}>No superintendents added yet.</div>
             ) : (
               <table className="dir-table">
-                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Company</th></tr></thead>
+                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th style={{ width: 60 }}></th></tr></thead>
                 <tbody>
                   {job.supers.map(s => (
                     <tr key={s.id}>
@@ -158,6 +163,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
                       <td>{s.email}</td>
                       <td>{s.phone}</td>
                       <td>{job.gc}</td>
+                      <td><button className="btn btn-icon btn-sm btn-danger" onClick={() => dispatch({ type: 'REMOVE_SUPER', jobId: job.id, supId: s.id })}><i className="ti ti-trash" /></button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -177,39 +183,58 @@ export default function JobDetail({ jobId, navigate, initialView }) {
               </tbody>
             </table>
           </div>
-
-          {/* Personnel roster */}
-          <div className="card">
-            <div className="card-header">
-              <div className="card-header-left"><div className="card-title">Field personnel roster</div></div>
-              <button className="btn btn-sm" onClick={() => navigate('job-setup', { jobId: job.id })}><i className="ti ti-settings" /> Manage</button>
-            </div>
-            {job.workers.length === 0 ? (
-              <div style={{ color: '#aaa', fontSize: 13, padding: '12px 0', fontStyle: 'italic' }}>No workers assigned. Add them in Job Setup.</div>
-            ) : (
-              <table className="dir-table">
-                <thead><tr><th>Name</th><th>Classification</th><th>Regular rate</th><th>OT rate</th></tr></thead>
-                <tbody>
-                  {job.workers.map(w => {
-                    const cls = job.classifications.find(c => c.id === w.classId);
-                    return (
-                      <tr key={w.id}>
-                        <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div className="av" style={{ width: 28, height: 28, fontSize: 10 }}>{initials(w.first + ' ' + w.last)}</div>
-                          <span style={{ fontWeight: 600 }}>{w.first} {w.last}</span>
-                        </div></td>
-                        <td>{cls?.name || '—'}</td>
-                        <td>{cls ? '$' + cls.regRate.toFixed(2) + '/hr' : '—'}</td>
-                        <td>{cls ? '$' + cls.otRate.toFixed(2) + '/hr' : '—'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
         </div>
       )}
+
+      {/* ADD SUPERINTENDENT MODAL */}
+      <Modal open={showAddSuper} onClose={() => setShowAddSuper(false)} title="Add Superintendent"
+        footer={<>
+          <button className="btn" onClick={() => setShowAddSuper(false)}>Cancel</button>
+          <button className="btn btn-primary" onClick={() => {
+            if (superTab === 'dir') {
+              if (!selectedDirContact) return alert('Please select a contact.');
+              const c = state.directory.contacts.find(x => x.id === selectedDirContact);
+              if (c) dispatch({ type: 'ADD_SUPER', jobId: job.id, sup: { id: genId(), name: c.first + ' ' + c.last, email: c.email, phone: c.phone } });
+            } else {
+              if (!superForm.name || !superForm.email) return alert('Name and email are required.');
+              dispatch({ type: 'ADD_SUPER', jobId: job.id, sup: { id: genId(), ...superForm } });
+              dispatch({ type: 'ADD_CONTACT', contact: { id: genId(), companyId: '', first: superForm.name.split(' ')[0], last: superForm.name.split(' ').slice(1).join(' '), title: 'Superintendent', phone: superForm.phone, email: superForm.email } });
+            }
+            setShowAddSuper(false);
+          }}><i className="ti ti-check" /> Add to job</button>
+        </>}>
+        <Tabs tabs={[{ id: 'dir', label: 'From directory' }, { id: 'new', label: 'Add new' }]} active={superTab} onChange={setSuperTab} />
+        {superTab === 'dir' ? (
+          <>
+            <SearchBar value={superSearch} onChange={setSuperSearch} placeholder="Search contacts..." />
+            <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+              {state.directory.contacts.filter(c => (c.first + ' ' + c.last + c.email).toLowerCase().includes(superSearch.toLowerCase())).length === 0
+                ? <p style={{ color: '#aaa', fontSize: 13, padding: 12 }}>No contacts in directory. Use "Add new" tab.</p>
+                : state.directory.contacts.filter(c => (c.first + ' ' + c.last + c.email).toLowerCase().includes(superSearch.toLowerCase())).map(c => {
+                  const co = state.directory.companies.find(x => x.id === c.companyId);
+                  const selected = selectedDirContact === c.id;
+                  return (
+                    <div key={c.id} className="list-row clickable" onClick={() => setSelectedDirContact(c.id)}
+                      style={{ background: selected ? '#EBF3FB' : 'transparent', borderRadius: 8, padding: '10px 8px' }}>
+                      <div className="row-icon">{initials(c.first + ' ' + c.last)}</div>
+                      <div className="row-body">
+                        <div className="row-title">{c.first} {c.last} {selected && <i className="ti ti-check" style={{ color: '#185FA5', marginLeft: 4 }} />}</div>
+                        <div className="row-sub">{c.title}{co ? ' · ' + co.name : ''} · {c.email}</div>
+                      </div>
+                    </div>
+                  );
+                })
+              }
+            </div>
+          </>
+        ) : (
+          <div className="form-grid form-grid-2">
+            <FormGroup label="Full name *" span="2"><Input value={superForm.name} onChange={v => setSuperForm(f => ({ ...f, name: v }))} placeholder="First Last" /></FormGroup>
+            <FormGroup label="Email *"><Input value={superForm.email} onChange={v => setSuperForm(f => ({ ...f, email: v }))} placeholder="name@company.com" /></FormGroup>
+            <FormGroup label="Phone"><Input value={superForm.phone} onChange={v => setSuperForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
+          </div>
+        )}
+      </Modal>
 
       {/* PACKAGE MODAL */}
       <Modal open={showNewPkg} onClose={() => setShowNewPkg(false)} title={editPkg ? 'Edit Package' : 'New T&M Package'}

@@ -57,7 +57,7 @@ export default function JobDetail({ jobId, navigate }) {
     <div>
       <Breadcrumb items={[
         { label: 'Jobs', onClick: () => navigate('jobs') },
-        { label: job.num + ' — ' + job.desc }
+        { label: job.num + ' — ' + job.name }
       ]} />
 
       <div className="stats-row" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
@@ -81,8 +81,8 @@ export default function JobDetail({ jobId, navigate }) {
       <div className="card">
         <div className="card-header">
           <div className="card-header-left">
-            <div className="card-title">{job.num} — {job.desc}</div>
-            <div className="card-subtitle">{job.gc}{job.owner ? ' · ' + job.owner : ''}</div>
+            <div className="card-title">{job.num} — {job.name}</div>
+            <div className="card-subtitle">{job.gc}{job.owner ? ' · ' + job.owner : ''}{job.city ? ' · ' + job.city + ', ' + job.state : ''}</div>
           </div>
           <div className="card-actions">
             <button className="btn btn-sm" onClick={() => navigate('job-setup', { jobId: job.id })}><i className="ti ti-settings" /> Setup</button>

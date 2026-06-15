@@ -7,16 +7,25 @@ import { Breadcrumb, Badge, Modal, FormGroup, Input, Select, EmptyState, Confirm
 export default function JobDetail({ jobId, navigate, initialView }) {
   const { state, dispatch } = useStore();
   const job = state.jobs.find(j => j.id === jobId);
-  const view = initialView || null; // null = summary only, 'packages', 'directory'
+  const view = initialView || null;
+
+  // Package state
   const [showNewPkg, setShowNewPkg] = useState(false);
-  const [showAddSuper, setShowAddSuper] = useState(false);
-  const [superForm, setSuperForm] = useState({ name: '', email: '', phone: '' });
-  const [superSearch, setSuperSearch] = useState('');
-  const [selectedDirContact, setSelectedDirContact] = useState(null);
-  const [superTab, setSuperTab] = useState('dir');
   const [editPkg, setEditPkg] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmDeletePkg, setConfirmDeletePkg] = useState(null);
   const [pkgForm, setPkgForm] = useState({ title: '', authType: 'Change Event', authRef: '', authFileName: null, numSystem: 'TM-{seq}', customNum: '' });
+
+  // Directory state
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [addUserRole, setAddUserRole] = useState('super'); // 'pm', 'foreman', 'super'
+  const [userTab, setUserTab] = useState('dir');
+  const [userSearch, setUserSearch] = useState('');
+  const [selectedDirContact, setSelectedDirContact] = useState(null);
+  const [newUserForm, setNewUserForm] = useState({ first: '', last: '', email: '', phone: '', title: '' });
+  const [showInlineCompany, setShowInlineCompany] = useState(false);
+  const [inlineCompanyId, setInlineCompanyId] = useState('');
+  const [inlineCompanyForm, setInlineCompanyForm] = useState({ name: '', phone: '', email: '', address: '' });
+  const [confirmRemoveUser, setConfirmRemoveUser] = useState(null);
 
   if (!job) return <div className="card"><p style={{ color: '#999' }}>Job not found.</p></div>;
 
@@ -25,18 +34,15 @@ export default function JobDetail({ jobId, navigate, initialView }) {
   const executedPkgs = job.packages.filter(p => p.tickets.length > 0 && p.tickets.every(t => ['signed', 'approved'].includes(t.status)));
   const executed = job.packages.reduce((s, p) => s + calcPackageTotals(p).executed, 0);
 
-  function openNewPkg() {
-    setPkgForm({ title: '', authType: 'Change Event', authRef: '', authFileName: null, numSystem: 'TM-{seq}', customNum: '' });
-    setEditPkg(null);
-    setShowNewPkg(true);
-  }
+  // Job directory members by role
+  const jobMembers = job.members || [];
+  const pms = jobMembers.filter(m => m.role === 'pm');
+  const foremen = jobMembers.filter(m => m.role === 'foreman');
+  const supers = jobMembers.filter(m => m.role === 'super');
 
-  function openEditPkg(pkg) {
-    setPkgForm({ title: pkg.title, authType: pkg.authType, authRef: pkg.authRef || '', authFileName: pkg.authFileName, numSystem: pkg.numSystem || 'TM-{seq}', customNum: '' });
-    setEditPkg(pkg);
-    setShowNewPkg(true);
-  }
-
+  // ── Package functions ──
+  function openNewPkg() { setPkgForm({ title: '', authType: 'Change Event', authRef: '', authFileName: null, numSystem: 'TM-{seq}', customNum: '' }); setEditPkg(null); setShowNewPkg(true); }
+  function openEditPkg(pkg) { setPkgForm({ title: pkg.title, authType: pkg.authType, authRef: pkg.authRef || '', authFileName: pkg.authFileName, numSystem: pkg.numSystem || 'TM-{seq}', customNum: '' }); setEditPkg(pkg); setShowNewPkg(true); }
   function savePkg() {
     if (!pkgForm.title) return alert('Package title is required.');
     const numSys = pkgForm.numSystem === 'custom' ? pkgForm.customNum || 'TM-{seq}' : pkgForm.numSystem;
@@ -52,10 +58,90 @@ export default function JobDetail({ jobId, navigate, initialView }) {
       navigate('package-detail', { jobId: job.id, pkgId: pkg.id });
     }
   }
-
   function deletePkg(pkg) {
     if (pkg.tickets.some(t => t.status !== 'draft')) { alert('Cannot delete a package with signed tickets.'); return; }
-    setConfirmDelete(pkg);
+    setConfirmDeletePkg(pkg);
+  }
+
+  // ── Directory functions ──
+  function openAddUserModal(role) {
+    setAddUserRole(role);
+    setUserTab('dir');
+    setUserSearch('');
+    setSelectedDirContact(null);
+    setNewUserForm({ first: '', last: '', email: '', phone: '', title: role === 'super' ? 'Superintendent' : role === 'foreman' ? 'Foreman' : 'Project Manager' });
+    setShowInlineCompany(false);
+    setInlineCompanyId('');
+    setInlineCompanyForm({ name: '', phone: '', email: '', address: '' });
+    setShowAddUser(true);
+  }
+
+  function handleCompanySelect(val) {
+    if (val === 'not-listed') { setShowInlineCompany(true); setInlineCompanyId(''); }
+    else { setShowInlineCompany(false); setInlineCompanyId(val); }
+  }
+
+  function saveUser() {
+    let contactId = null;
+    if (userTab === 'dir') {
+      if (!selectedDirContact) return alert('Please select a contact from the directory.');
+      const c = state.directory.contacts.find(x => x.id === selectedDirContact);
+      if (!c) return;
+      const member = { id: genId(), contactId: c.id, name: c.first + ' ' + c.last, email: c.email, phone: c.phone, role: addUserRole, inviteSent: addUserRole !== 'super' };
+      dispatch({ type: 'ADD_JOB_MEMBER', jobId: job.id, member });
+    } else {
+      if (!newUserForm.first || !newUserForm.last || !newUserForm.email) return alert('First name, last name, and email are required.');
+      // Create company if needed
+      let companyId = inlineCompanyId;
+      if (showInlineCompany && inlineCompanyForm.name) {
+        const newCo = { id: genId(), ...inlineCompanyForm };
+        dispatch({ type: 'ADD_COMPANY', company: newCo });
+        companyId = newCo.id;
+      }
+      // Add to platform directory
+      const newContact = { id: genId(), companyId, first: newUserForm.first, last: newUserForm.last, title: newUserForm.title, phone: newUserForm.phone, email: newUserForm.email };
+      dispatch({ type: 'ADD_CONTACT', contact: newContact });
+      // Add to job
+      const member = { id: genId(), contactId: newContact.id, name: newUserForm.first + ' ' + newUserForm.last, email: newUserForm.email, phone: newUserForm.phone, role: addUserRole, inviteSent: addUserRole !== 'super' };
+      dispatch({ type: 'ADD_JOB_MEMBER', jobId: job.id, member });
+    }
+    setShowAddUser(false);
+    if (addUserRole !== 'super') {
+      alert(`Invite email will be sent to ${userTab === 'dir' ? state.directory.contacts.find(x => x.id === selectedDirContact)?.email : newUserForm.email} once authentication is set up.`);
+    }
+  }
+
+  function removeUser(member) { setConfirmRemoveUser(member); }
+
+  const filteredDirContacts = state.directory.contacts.filter(c =>
+    (c.first + ' ' + c.last + ' ' + c.email).toLowerCase().includes(userSearch.toLowerCase())
+  );
+
+  const roleLabel = { pm: 'Sub Project Manager', foreman: 'Foreman', super: 'GC Superintendent' };
+
+  // ── Member row component ──
+  function MemberRow({ member }) {
+    const co = state.directory.contacts.find(c => c.id === member.contactId);
+    const company = co ? state.directory.companies.find(x => x.id === co.companyId) : null;
+    return (
+      <tr>
+        <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="av" style={{ width: 28, height: 28, fontSize: 10 }}>{initials(member.name)}</div>
+          <span style={{ fontWeight: 600 }}>{member.name}</span>
+        </div></td>
+        <td>{member.email}</td>
+        <td>{member.phone}</td>
+        <td>{company?.name || '—'}</td>
+        <td>
+          {member.role !== 'super' && (
+            <span className={`badge ${member.inviteSent ? 'badge-info' : 'badge-gray'}`}>
+              {member.inviteSent ? 'Invite pending' : 'Not invited'}
+            </span>
+          )}
+        </td>
+        <td><button className="btn btn-icon btn-sm btn-danger" onClick={() => removeUser(member)}><i className="ti ti-trash" /></button></td>
+      </tr>
+    );
   }
 
   return (
@@ -65,7 +151,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         { label: job.num + ' - ' + job.name }
       ]} />
 
-      {/* THREE SUMMARY BOXES — always visible */}
+      {/* THREE SUMMARY BOXES */}
       <div className="stats-row" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <div className="stat-item">
           <div className="stat-label">Open / In Progress</div>
@@ -84,7 +170,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         </div>
       </div>
 
-      {/* No content selected yet */}
+      {/* NO VIEW SELECTED */}
       {!view && (
         <div className="card" style={{ textAlign: 'center', padding: '32px 20px', color: '#aaa' }}>
           <i className="ti ti-arrow-up" style={{ fontSize: 24, display: 'block', marginBottom: 8 }} />
@@ -137,36 +223,53 @@ export default function JobDetail({ jobId, navigate, initialView }) {
       {/* JOB DIRECTORY VIEW */}
       {view === 'directory' && (
         <div>
-          {/* Superintendents */}
+          {/* Sub Project Managers */}
           <div className="card">
             <div className="card-header">
               <div className="card-header-left">
-                <div className="card-title">Superintendents</div>
-                <div className="card-subtitle">GC field supervisors who sign T&M tickets for {job.num}</div>
+                <div className="card-title">Sub Project Managers</div>
+                <div className="card-subtitle">Internal PMs on this job — will receive email invite to Builden</div>
               </div>
-              <button className="btn btn-primary btn-sm" onClick={() => { setSuperTab('dir'); setSelectedDirContact(null); setSuperForm({ name: '', email: '', phone: '' }); setShowAddSuper(true); }}>
-                <i className="ti ti-plus" /> Add superintendent
-              </button>
+              <button className="btn btn-primary btn-sm" onClick={() => openAddUserModal('pm')}><i className="ti ti-plus" /> Add PM</button>
             </div>
-            {job.supers.length === 0 ? (
-              <div style={{ color: '#aaa', fontSize: 13, padding: '12px 0', fontStyle: 'italic' }}>No superintendents added yet.</div>
-            ) : (
+            {pms.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0', fontStyle: 'italic' }}>No PMs added yet.</p> : (
               <table className="dir-table">
-                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th style={{ width: 60 }}></th></tr></thead>
-                <tbody>
-                  {job.supers.map(s => (
-                    <tr key={s.id}>
-                      <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div className="av" style={{ width: 28, height: 28, fontSize: 10 }}>{initials(s.name)}</div>
-                        <span style={{ fontWeight: 600 }}>{s.name}</span>
-                      </div></td>
-                      <td>{s.email}</td>
-                      <td>{s.phone}</td>
-                      <td>{job.gc}</td>
-                      <td><button className="btn btn-icon btn-sm btn-danger" onClick={() => dispatch({ type: 'REMOVE_SUPER', jobId: job.id, supId: s.id })}><i className="ti ti-trash" /></button></td>
-                    </tr>
-                  ))}
-                </tbody>
+                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th>Status</th><th style={{ width: 50 }}></th></tr></thead>
+                <tbody>{pms.map(m => <MemberRow key={m.id} member={m} />)}</tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Foremen */}
+          <div className="card">
+            <div className="card-header">
+              <div className="card-header-left">
+                <div className="card-title">Foremen</div>
+                <div className="card-subtitle">Field foremen on this job — will receive email invite to Builden</div>
+              </div>
+              <button className="btn btn-primary btn-sm" onClick={() => openAddUserModal('foreman')}><i className="ti ti-plus" /> Add foreman</button>
+            </div>
+            {foremen.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0', fontStyle: 'italic' }}>No foremen added yet.</p> : (
+              <table className="dir-table">
+                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th>Status</th><th style={{ width: 50 }}></th></tr></thead>
+                <tbody>{foremen.map(m => <MemberRow key={m.id} member={m} />)}</tbody>
+              </table>
+            )}
+          </div>
+
+          {/* GC Superintendents */}
+          <div className="card">
+            <div className="card-header">
+              <div className="card-header-left">
+                <div className="card-title">GC Superintendents</div>
+                <div className="card-subtitle">Sign T&M tickets via DocuSign — no Builden login required</div>
+              </div>
+              <button className="btn btn-primary btn-sm" onClick={() => openAddUserModal('super')}><i className="ti ti-plus" /> Add superintendent</button>
+            </div>
+            {supers.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0', fontStyle: 'italic' }}>No superintendents added yet.</p> : (
+              <table className="dir-table">
+                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th></th><th style={{ width: 50 }}></th></tr></thead>
+                <tbody>{supers.map(m => <MemberRow key={m.id} member={m} />)}</tbody>
               </table>
             )}
           </div>
@@ -186,31 +289,31 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         </div>
       )}
 
-      {/* ADD SUPERINTENDENT MODAL */}
-      <Modal open={showAddSuper} onClose={() => setShowAddSuper(false)} title="Add Superintendent"
+      {/* ADD USER MODAL */}
+      <Modal open={showAddUser} onClose={() => setShowAddUser(false)} title={`Add ${roleLabel[addUserRole]}`} wide
         footer={<>
-          <button className="btn" onClick={() => setShowAddSuper(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={() => {
-            if (superTab === 'dir') {
-              if (!selectedDirContact) return alert('Please select a contact.');
-              const c = state.directory.contacts.find(x => x.id === selectedDirContact);
-              if (c) dispatch({ type: 'ADD_SUPER', jobId: job.id, sup: { id: genId(), name: c.first + ' ' + c.last, email: c.email, phone: c.phone } });
-            } else {
-              if (!superForm.name || !superForm.email) return alert('Name and email are required.');
-              dispatch({ type: 'ADD_SUPER', jobId: job.id, sup: { id: genId(), ...superForm } });
-              dispatch({ type: 'ADD_CONTACT', contact: { id: genId(), companyId: '', first: superForm.name.split(' ')[0], last: superForm.name.split(' ').slice(1).join(' '), title: 'Superintendent', phone: superForm.phone, email: superForm.email } });
-            }
-            setShowAddSuper(false);
-          }}><i className="ti ti-check" /> Add to job</button>
+          <button className="btn" onClick={() => setShowAddUser(false)}>Cancel</button>
+          <button className="btn btn-primary" onClick={saveUser}>
+            <i className="ti ti-check" /> {addUserRole !== 'super' ? 'Add & send invite' : 'Add to job'}
+          </button>
         </>}>
-        <Tabs tabs={[{ id: 'dir', label: 'From directory' }, { id: 'new', label: 'Add new' }]} active={superTab} onChange={setSuperTab} />
-        {superTab === 'dir' ? (
+
+        {addUserRole !== 'super' && (
+          <div className="notice notice-info" style={{ marginBottom: 16 }}>
+            <i className="ti ti-mail" />
+            <span>This person will receive an email invite to join this job in Builden once authentication is enabled.</span>
+          </div>
+        )}
+
+        <Tabs tabs={[{ id: 'dir', label: 'From directory' }, { id: 'new', label: 'Add new' }]} active={userTab} onChange={t => { setUserTab(t); setSelectedDirContact(null); setShowInlineCompany(false); }} />
+
+        {userTab === 'dir' ? (
           <>
-            <SearchBar value={superSearch} onChange={setSuperSearch} placeholder="Search contacts..." />
-            <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-              {state.directory.contacts.filter(c => (c.first + ' ' + c.last + c.email).toLowerCase().includes(superSearch.toLowerCase())).length === 0
-                ? <p style={{ color: '#aaa', fontSize: 13, padding: 12 }}>No contacts in directory. Use "Add new" tab.</p>
-                : state.directory.contacts.filter(c => (c.first + ' ' + c.last + c.email).toLowerCase().includes(superSearch.toLowerCase())).map(c => {
+            <SearchBar value={userSearch} onChange={setUserSearch} placeholder="Search by name or email..." />
+            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+              {filteredDirContacts.length === 0
+                ? <p style={{ color: '#aaa', fontSize: 13, padding: 12 }}>No contacts found. Switch to "Add new" to add someone.</p>
+                : filteredDirContacts.map(c => {
                   const co = state.directory.companies.find(x => x.id === c.companyId);
                   const selected = selectedDirContact === c.id;
                   return (
@@ -228,11 +331,33 @@ export default function JobDetail({ jobId, navigate, initialView }) {
             </div>
           </>
         ) : (
-          <div className="form-grid form-grid-2">
-            <FormGroup label="Full name *" span="2"><Input value={superForm.name} onChange={v => setSuperForm(f => ({ ...f, name: v }))} placeholder="First Last" /></FormGroup>
-            <FormGroup label="Email *"><Input value={superForm.email} onChange={v => setSuperForm(f => ({ ...f, email: v }))} placeholder="name@company.com" /></FormGroup>
-            <FormGroup label="Phone"><Input value={superForm.phone} onChange={v => setSuperForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
-          </div>
+          <>
+            <div className="form-grid form-grid-2">
+              <FormGroup label="First name *"><Input value={newUserForm.first} onChange={v => setNewUserForm(f => ({ ...f, first: v }))} placeholder="First" /></FormGroup>
+              <FormGroup label="Last name *"><Input value={newUserForm.last} onChange={v => setNewUserForm(f => ({ ...f, last: v }))} placeholder="Last" /></FormGroup>
+              <FormGroup label="Title"><Input value={newUserForm.title} onChange={v => setNewUserForm(f => ({ ...f, title: v }))} /></FormGroup>
+              <FormGroup label="Phone"><Input value={newUserForm.phone} onChange={v => setNewUserForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
+              <FormGroup label="Email *" span="2"><Input value={newUserForm.email} onChange={v => setNewUserForm(f => ({ ...f, email: v }))} placeholder="name@company.com" /></FormGroup>
+            </div>
+            <FormGroup label="Company">
+              <select className="form-input" value={showInlineCompany ? 'not-listed' : inlineCompanyId} onChange={e => handleCompanySelect(e.target.value)}>
+                <option value="">— Select company —</option>
+                {state.directory.companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="not-listed">+ Company not listed — add new</option>
+              </select>
+            </FormGroup>
+            {showInlineCompany && (
+              <div style={{ marginTop: 12, padding: '14px 16px', background: '#f8fbff', border: '1px solid #C5DEFA', borderRadius: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#185FA5', marginBottom: 12 }}><i className="ti ti-building" /> New company details</div>
+                <div className="form-grid form-grid-2">
+                  <FormGroup label="Company name *" span="2"><Input value={inlineCompanyForm.name} onChange={v => setInlineCompanyForm(f => ({ ...f, name: v }))} placeholder="e.g. Apex Construction Group" /></FormGroup>
+                  <FormGroup label="Phone"><Input value={inlineCompanyForm.phone} onChange={v => setInlineCompanyForm(f => ({ ...f, phone: v }))} /></FormGroup>
+                  <FormGroup label="Email"><Input value={inlineCompanyForm.email} onChange={v => setInlineCompanyForm(f => ({ ...f, email: v }))} /></FormGroup>
+                  <FormGroup label="Address" span="2"><Input value={inlineCompanyForm.address} onChange={v => setInlineCompanyForm(f => ({ ...f, address: v }))} placeholder="Street, City, State ZIP" /></FormGroup>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </Modal>
 
@@ -263,9 +388,13 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         </div>
       </Modal>
 
-      <ConfirmModal open={!!confirmDelete} onClose={() => setConfirmDelete(null)}
-        onConfirm={() => { dispatch({ type: 'DELETE_PKG', jobId: job.id, pkgId: confirmDelete.id }); setConfirmDelete(null); }}
-        title="Delete package" message={`Delete "${confirmDelete?.num} - ${confirmDelete?.title}"? This cannot be undone.`} danger />
+      <ConfirmModal open={!!confirmDeletePkg} onClose={() => setConfirmDeletePkg(null)}
+        onConfirm={() => { dispatch({ type: 'DELETE_PKG', jobId: job.id, pkgId: confirmDeletePkg.id }); setConfirmDeletePkg(null); }}
+        title="Delete package" message={`Delete "${confirmDeletePkg?.num} - ${confirmDeletePkg?.title}"? This cannot be undone.`} danger />
+
+      <ConfirmModal open={!!confirmRemoveUser} onClose={() => setConfirmRemoveUser(null)}
+        onConfirm={() => { dispatch({ type: 'REMOVE_JOB_MEMBER', jobId: job.id, memberId: confirmRemoveUser.id }); setConfirmRemoveUser(null); }}
+        title="Remove from job" message={`Remove ${confirmRemoveUser?.name} from this job?`} danger />
     </div>
   );
 }

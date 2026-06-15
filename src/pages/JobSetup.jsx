@@ -81,8 +81,12 @@ export default function JobSetup({ jobId, navigate }) {
       <div className="card">
         <div className="card-header"><div className="card-title">Job Information</div></div>
         <div className="form-grid form-grid-2">
+          <FormGroup label="Job name"><Input value={info.name} onChange={v => setInfo(f => ({ ...f, name: v }))} /></FormGroup>
           <FormGroup label="Job number"><Input value={info.num} onChange={v => setInfo(f => ({ ...f, num: v }))} /></FormGroup>
-          <FormGroup label="Job description"><Input value={info.desc} onChange={v => setInfo(f => ({ ...f, desc: v }))} /></FormGroup>
+          <FormGroup label="Address" span="2"><Input value={info.address} onChange={v => setInfo(f => ({ ...f, address: v }))} /></FormGroup>
+          <FormGroup label="City"><Input value={info.city} onChange={v => setInfo(f => ({ ...f, city: v }))} /></FormGroup>
+          <FormGroup label="State"><Input value={info.state} onChange={v => setInfo(f => ({ ...f, state: v }))} /></FormGroup>
+          <FormGroup label="ZIP"><Input value={info.zip} onChange={v => setInfo(f => ({ ...f, zip: v }))} /></FormGroup>
           <FormGroup label="General contractor"><Input value={info.gc} onChange={v => setInfo(f => ({ ...f, gc: v }))} /></FormGroup>
           <FormGroup label="Owner"><Input value={info.owner} onChange={v => setInfo(f => ({ ...f, owner: v }))} /></FormGroup>
           <FormGroup label="Architect / engineer" span="2"><Input value={info.ae} onChange={v => setInfo(f => ({ ...f, ae: v }))} /></FormGroup>

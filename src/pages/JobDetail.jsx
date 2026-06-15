@@ -82,7 +82,6 @@ export default function JobDetail({ jobId, navigate, initialView }) {
   }
 
   function saveUser() {
-    let contactId = null;
     if (userTab === 'dir') {
       if (!selectedDirContact) return alert('Please select a contact from the directory.');
       const c = state.directory.contacts.find(x => x.id === selectedDirContact);

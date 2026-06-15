@@ -11,6 +11,7 @@ const initialState = {
       supers: [{ id: 's1', name: 'R. Kowalski', email: 'rkowalski@apexcg.com', phone: '(215) 555-0134' }],
       classifications: [{ id: 'c1', name: 'Foreman', regRate: 95, otRate: 142.50, dtRate: 190 }, { id: 'c2', name: 'Electrician', regRate: 75, otRate: 112.50, dtRate: 150 }, { id: 'c3', name: 'Laborer', regRate: 55, otRate: 82.50, dtRate: 110 }],
       workers: [{ id: 'w1', first: 'Mike', last: 'Torres', classId: 'c1' }, { id: 'w2', first: 'Dan', last: 'Reyes', classId: 'c2' }],
+      members: [],
       packages: [
         { id: 'p1', num: 'TM-001', numSystem: 'TM-{seq}', title: 'Power to BAS control panel - Mech Room 1', authType: 'Change Event', authRef: 'CE-047', authFileName: null, prepSettings: null,
           tickets: [{ id: 't1', num: 'TM-001.1', date: '2026-03-10', desc: 'Ran conduit from panel room to BAS unit location.', labor: [{ id: 'l1', workerId: 'w1', workerName: 'Mike Torres', classId: 'c1', className: 'Foreman', reg: 8, ot: 0, dt: 0, regRate: 95, otRate: 142.50, dtRate: 190 }], materials: [], vendors: [], photos: [], foremanId: 'w1', foremanName: 'Mike Torres', superId: 's1', superName: 'R. Kowalski', status: 'draft' }] },
@@ -24,6 +25,7 @@ const initialState = {
       supers: [{ id: 's2', name: 'J. Martinez', email: 'jmartinez@summitgc.com', phone: '(518) 555-0221' }],
       classifications: [{ id: 'c4', name: 'Foreman', regRate: 98, otRate: 147, dtRate: 196 }, { id: 'c5', name: 'Plumber', regRate: 78, otRate: 117, dtRate: 156 }],
       workers: [{ id: 'w3', first: 'Carlos', last: 'Rivera', classId: 'c4' }, { id: 'w4', first: 'Tom', last: 'Brady', classId: 'c5' }],
+      members: [],
       packages: [
         { id: 'p3', num: 'TM-001', numSystem: 'TM-{seq}', title: 'Reroute drain lines Level 2', authType: 'Field Work Order', authRef: 'FWO-011', authFileName: null, prepSettings: null,
           tickets: [{ id: 't3', num: 'TM-001.1', date: '2026-03-08', desc: 'Rerouted drain lines per architect field directive.', labor: [{ id: 'l3', workerId: 'w3', workerName: 'Carlos Rivera', classId: 'c4', className: 'Foreman', reg: 8, ot: 0, dt: 0, regRate: 98, otRate: 147, dtRate: 196 }], materials: [], vendors: [], photos: [], foremanId: 'w3', foremanName: 'Carlos Rivera', superId: 's2', superName: 'J. Martinez', status: 'draft' }] },
@@ -37,6 +39,7 @@ const initialState = {
       supers: [{ id: 's3', name: 'B. Walsh', email: 'bwalsh@meridian.com', phone: '(518) 555-0310' }],
       classifications: [{ id: 'c6', name: 'Foreman', regRate: 100, otRate: 150, dtRate: 200 }, { id: 'c7', name: 'HVAC Tech', regRate: 82, otRate: 123, dtRate: 164 }],
       workers: [{ id: 'w5', first: 'Steve', last: 'McKenna', classId: 'c6' }, { id: 'w6', first: 'Lisa', last: 'Chen', classId: 'c7' }],
+      members: [],
       packages: [
         { id: 'p5', num: 'TM-001', numSystem: 'TM-{seq}', title: 'VAV box replacement - Wing C', authType: 'Change Event', authRef: 'CE-012', authFileName: null, prepSettings: null,
           tickets: [{ id: 't5', num: 'TM-001.1', date: '2026-03-05', desc: 'Removed and replaced VAV boxes in Wing C corridor.', labor: [{ id: 'l5', workerId: 'w5', workerName: 'Steve McKenna', classId: 'c6', className: 'Foreman', reg: 8, ot: 4, dt: 0, regRate: 100, otRate: 150, dtRate: 200 }], materials: [], vendors: [], photos: [], foremanId: 'w5', foremanName: 'Steve McKenna', superId: 's3', superName: 'B. Walsh', status: 'pending-sig' }] },
@@ -50,6 +53,7 @@ const initialState = {
       supers: [{ id: 's4', name: 'P. Sullivan', email: 'psullivan@nec.com', phone: '(518) 555-0445' }],
       classifications: [{ id: 'c8', name: 'Foreman', regRate: 95, otRate: 142.50, dtRate: 190 }, { id: 'c9', name: 'Electrician', regRate: 76, otRate: 114, dtRate: 152 }],
       workers: [{ id: 'w7', first: 'Ray', last: 'Diaz', classId: 'c8' }, { id: 'w8', first: 'Pat', last: 'OBrien', classId: 'c9' }],
+      members: [],
       packages: [
         { id: 'p7', num: 'TM-001', numSystem: 'TM-{seq}', title: 'Guestroom lighting upgrade - Floors 3-5', authType: 'Authorization Email', authRef: '', authFileName: null, prepSettings: null,
           tickets: [{ id: 't7', num: 'TM-001.1', date: '2026-03-09', desc: 'Replaced lighting fixtures in guestrooms floors 3 through 5.', labor: [{ id: 'l7', workerId: 'w7', workerName: 'Ray Diaz', classId: 'c8', className: 'Foreman', reg: 8, ot: 0, dt: 0, regRate: 95, otRate: 142.50, dtRate: 190 }], materials: [], vendors: [], photos: [], foremanId: 'w7', foremanName: 'Ray Diaz', superId: 's4', superName: 'P. Sullivan', status: 'draft' }] },
@@ -63,6 +67,7 @@ const initialState = {
       supers: [{ id: 's5', name: 'D. Kowalczyk', email: 'dkowalczyk@hayner.com', phone: '(518) 555-0512' }],
       classifications: [{ id: 'c10', name: 'Foreman', regRate: 92, otRate: 138, dtRate: 184 }, { id: 'c11', name: 'Plumber', regRate: 74, otRate: 111, dtRate: 148 }],
       workers: [{ id: 'w9', first: 'Frank', last: 'Russo', classId: 'c10' }, { id: 'w10', first: 'Amy', last: 'Park', classId: 'c11' }],
+      members: [],
       packages: [
         { id: 'p9', num: 'TM-001', numSystem: 'TM-{seq}', title: 'Restroom plumbing modifications', authType: 'Sketch or Bulletin', authRef: 'SK-007', authFileName: null, prepSettings: null,
           tickets: [{ id: 't9', num: 'TM-001.1', date: '2026-03-06', desc: 'Modified restroom rough-in per architect sketch.', labor: [{ id: 'l9', workerId: 'w9', workerName: 'Frank Russo', classId: 'c10', className: 'Foreman', reg: 8, ot: 0, dt: 0, regRate: 92, otRate: 138, dtRate: 184 }], materials: [], vendors: [], photos: [], foremanId: 'w9', foremanName: 'Frank Russo', superId: 's5', superName: 'D. Kowalczyk', status: 'draft' }] },
@@ -76,6 +81,7 @@ const initialState = {
       supers: [{ id: 's6', name: 'T. Flanagan', email: 'tflanagan@bbl.com', phone: '(518) 555-0601' }],
       classifications: [{ id: 'c12', name: 'Foreman', regRate: 97, otRate: 145.50, dtRate: 194 }, { id: 'c13', name: 'Electrician', regRate: 79, otRate: 118.50, dtRate: 158 }],
       workers: [{ id: 'w11', first: 'Joe', last: 'Martino', classId: 'c12' }, { id: 'w12', first: 'Sara', last: 'Voss', classId: 'c13' }],
+      members: [],
       packages: [
         { id: 'p11', num: 'TM-001', numSystem: 'TM-{seq}', title: 'Tenant fit-out electrical - Unit 114', authType: 'Notice to Proceed on T&M Basis', authRef: 'NTP-005', authFileName: null, prepSettings: null,
           tickets: [{ id: 't11', num: 'TM-001.1', date: '2026-03-07', desc: 'Completed electrical rough-in for new tenant unit 114.', labor: [{ id: 'l11', workerId: 'w11', workerName: 'Joe Martino', classId: 'c12', className: 'Foreman', reg: 8, ot: 2, dt: 0, regRate: 97, otRate: 145.50, dtRate: 194 }], materials: [], vendors: [], photos: [], foremanId: 'w11', foremanName: 'Joe Martino', superId: 's6', superName: 'T. Flanagan', status: 'pending-sig' }] },
@@ -89,6 +95,7 @@ const initialState = {
       supers: [{ id: 's7', name: 'M. Russo', email: 'mrusso@turner.com', phone: '(518) 555-0712' }],
       classifications: [{ id: 'c14', name: 'Foreman', regRate: 102, otRate: 153, dtRate: 204 }, { id: 'c15', name: 'HVAC Tech', regRate: 84, otRate: 126, dtRate: 168 }],
       workers: [{ id: 'w13', first: 'Dave', last: 'Hoffman', classId: 'c14' }, { id: 'w14', first: 'Jen', last: 'Torres', classId: 'c15' }],
+      members: [],
       packages: [
         { id: 'p13', num: 'TM-001', numSystem: 'TM-{seq}', title: 'Lab fume hood ductwork modification', authType: 'Design Team Clarification', authRef: 'DTC-008', authFileName: null, prepSettings: null,
           tickets: [{ id: 't13', num: 'TM-001.1', date: '2026-03-04', desc: 'Modified fume hood ductwork per design team clarification.', labor: [{ id: 'l13', workerId: 'w13', workerName: 'Dave Hoffman', classId: 'c14', className: 'Foreman', reg: 8, ot: 0, dt: 0, regRate: 102, otRate: 153, dtRate: 204 }], materials: [], vendors: [], photos: [], foremanId: 'w13', foremanName: 'Dave Hoffman', superId: 's7', superName: 'M. Russo', status: 'draft' }] },
@@ -102,6 +109,7 @@ const initialState = {
       supers: [{ id: 's8', name: 'K. Brennan', email: 'kbrennan@clough.com', phone: '(518) 555-0823' }],
       classifications: [{ id: 'c16', name: 'Foreman', regRate: 93, otRate: 139.50, dtRate: 186 }, { id: 'c17', name: 'Plumber', regRate: 72, otRate: 108, dtRate: 144 }],
       workers: [{ id: 'w15', first: 'Nick', last: 'Caruso', classId: 'c16' }, { id: 'w16', first: 'Beth', last: 'Moore', classId: 'c17' }],
+      members: [],
       packages: [
         { id: 'p15', num: 'TM-001', numSystem: 'TM-{seq}', title: 'Grease trap installation - Food court', authType: 'Emergency Work Authorization', authRef: 'EWA-002', authFileName: null, prepSettings: null,
           tickets: [{ id: 't15', num: 'TM-001.1', date: '2026-03-11', desc: 'Installed grease trap per emergency work authorization.', labor: [{ id: 'l15', workerId: 'w15', workerName: 'Nick Caruso', classId: 'c16', className: 'Foreman', reg: 8, ot: 4, dt: 0, regRate: 93, otRate: 139.50, dtRate: 186 }], materials: [], vendors: [], photos: [], foremanId: 'w15', foremanName: 'Nick Caruso', superId: 's8', superName: 'K. Brennan', status: 'draft' }] },
@@ -115,6 +123,7 @@ const initialState = {
       supers: [{ id: 's9', name: 'G. Petrie', email: 'gpetrie@christa.com', phone: '(518) 555-0934' }],
       classifications: [{ id: 'c18', name: 'Foreman', regRate: 90, otRate: 135, dtRate: 180 }, { id: 'c19', name: 'Electrician', regRate: 73, otRate: 109.50, dtRate: 146 }],
       workers: [{ id: 'w17', first: 'Mark', last: 'Ellis', classId: 'c18' }, { id: 'w18', first: 'Tina', last: 'Shaw', classId: 'c19' }],
+      members: [],
       packages: [
         { id: 'p17', num: 'TM-001', numSystem: 'TM-{seq}', title: 'Common area electrical panel upgrade', authType: 'Change Event', authRef: 'CE-044', authFileName: null, prepSettings: null,
           tickets: [{ id: 't17', num: 'TM-001.1', date: '2026-03-08', desc: 'Upgraded electrical panels in common areas floors 1-3.', labor: [{ id: 'l17', workerId: 'w17', workerName: 'Mark Ellis', classId: 'c18', className: 'Foreman', reg: 8, ot: 0, dt: 0, regRate: 90, otRate: 135, dtRate: 180 }], materials: [], vendors: [], photos: [], foremanId: 'w17', foremanName: 'Mark Ellis', superId: 's9', superName: 'G. Petrie', status: 'draft' }] },
@@ -128,6 +137,7 @@ const initialState = {
       supers: [{ id: 's10', name: 'R. MacPherson', email: 'rmacpherson@cs.com', phone: '(518) 555-1045' }],
       classifications: [{ id: 'c20', name: 'Foreman', regRate: 105, otRate: 157.50, dtRate: 210 }, { id: 'c21', name: 'HVAC Tech', regRate: 86, otRate: 129, dtRate: 172 }],
       workers: [{ id: 'w19', first: 'Chris', last: 'Dolan', classId: 'c20' }, { id: 'w20', first: 'Dana', last: 'Webb', classId: 'c21' }],
+      members: [],
       packages: [
         { id: 'p19', num: 'TM-001', numSystem: 'TM-{seq}', title: 'HVAC controls upgrade - Building 10', authType: 'Change Event', authRef: 'CE-067', authFileName: null, prepSettings: null,
           tickets: [{ id: 't19', num: 'TM-001.1', date: '2026-03-03', desc: 'Upgraded HVAC controls in Building 10 manufacturing area.', labor: [{ id: 'l19', workerId: 'w19', workerName: 'Chris Dolan', classId: 'c20', className: 'Foreman', reg: 8, ot: 4, dt: 0, regRate: 105, otRate: 157.50, dtRate: 210 }], materials: [], vendors: [], photos: [], foremanId: 'w19', foremanName: 'Chris Dolan', superId: 's10', superName: 'R. MacPherson', status: 'pending-sig' }] },
@@ -165,6 +175,8 @@ function reducer(state, action) {
     case 'ADD_WORKER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, workers: [...j.workers, action.worker] } : j) };
     case 'UPDATE_WORKER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, workers: j.workers.map(w => w.id === action.worker.id ? action.worker : w) } : j) };
     case 'REMOVE_WORKER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, workers: j.workers.filter(w => w.id !== action.workerId) } : j) };
+    case 'ADD_JOB_MEMBER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, members: [...(j.members || []), action.member] } : j) };
+    case 'REMOVE_JOB_MEMBER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, members: (j.members || []).filter(m => m.id !== action.memberId) } : j) };
     case 'ADD_PKG': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, packages: [...j.packages, action.pkg] } : j) };
     case 'UPDATE_PKG': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, packages: j.packages.map(p => p.id === action.pkgId ? { ...p, ...action.data } : p) } : j) };
     case 'DELETE_PKG': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, packages: j.packages.filter(p => p.id !== action.pkgId) } : j) };

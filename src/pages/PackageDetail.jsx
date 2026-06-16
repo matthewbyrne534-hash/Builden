@@ -51,8 +51,6 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
       return s + base;
     }, 0);
 
-  const st = pkgStatusInfo(pkg);
-
   // Labor hours summary by classification for prep modal
   const laborByClass = {};
   pkg.tickets.forEach(t => {

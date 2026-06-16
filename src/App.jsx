@@ -129,7 +129,9 @@ function AppInner() {
             {isInJob && currentJob && (
               <div ref={menuRef} style={{ position: 'relative' }}>
                 <button className="btn btn-sm btn-primary" onClick={() => setShowJobMenu(v => !v)} style={{ gap: 4 }}>
-                  {currentJob.num}
+                  {page === 'job-detail' && params.view === 'packages' ? 'T&M Packages' :
+                   page === 'job-detail' && params.view === 'directory' ? 'Directory' :
+                   currentJob.num}
                   <i className="ti ti-chevron-down" style={{ fontSize: 11 }} />
                 </button>
                 {showJobMenu && (

@@ -176,9 +176,18 @@ export default function PackagePreview({ jobId, pkgId, navigate }) {
                     </tr>
                   );
                 })}
-                <tr style={s.totalRow}><td colSpan={4} style={{ ...s.td, textAlign: 'right' }}>Material subtotal</td><td style={s.td}>{fmt(grandMatBase)}</td></tr>
-                <tr><td colSpan={4} style={{ ...s.td, textAlign: 'right', color: '#888' }}>OH&P ({prepSettings.matOhp}%)</td><td style={{ ...s.td, color: '#888' }}>{fmt(grandMatOhp)}</td></tr>
-                <tr style={{ ...s.totalRow, background: '#E8F5DA' }}><td colSpan={4} style={{ ...s.td, textAlign: 'right', fontWeight: 800, color: '#2A6008' }}>Material total</td><td style={{ ...s.td, fontWeight: 800, color: '#2A6008' }}>{fmt(grandMatTotal)}</td></tr>
+                <tr style={s.totalRow}>
+                  <td colSpan={4} style={{ ...s.td, textAlign: 'right' }}>Material subtotal</td>
+                  <td style={s.td}>{fmt(grandMatBase)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={4} style={{ ...s.td, textAlign: 'right', color: '#888' }}>OH&P ({prepSettings.matOhp}%)</td>
+                  <td style={{ ...s.td, color: '#888' }}>{fmt(grandMatOhp)}</td>
+                </tr>
+                <tr style={{ background: '#E8F5DA' }}>
+                  <td colSpan={4} style={{ ...s.td, textAlign: 'right', fontWeight: 800, color: '#2A6008' }}>Material total</td>
+                  <td style={{ ...s.td, fontWeight: 800, color: '#2A6008' }}>{fmt(grandMatTotal)}</td>
+                </tr>
               </tbody>
             </table>
           </>
@@ -226,20 +235,17 @@ export default function PackagePreview({ jobId, pkgId, navigate }) {
             <thead><tr>
               <th style={s.th}>Name</th><th style={s.th}>Position</th>
               <th style={s.th}>Reg hrs</th><th style={s.th}>OT hrs</th><th style={s.th}>DT hrs</th>
-              <th style={s.th}>Rate</th><th style={s.th}>Amount</th>
             </tr></thead>
             <tbody>
               {(t.labor || []).map((r, i) => (
                 <tr key={i}>
                   <td style={s.td}>{r.workerName}</td><td style={s.td}>{r.className}</td>
                   <td style={s.td}>{r.reg}</td><td style={s.td}>{r.ot || 0}</td><td style={s.td}>{r.dt || 0}</td>
-                  <td style={s.td}></td><td style={s.td}></td>
                 </tr>
               ))}
               {Array.from({ length: Math.max(0, 8 - (t.labor || []).length) }).map((_, i) => (
-                <tr key={'e' + i}><td style={{ ...s.td, height: 22 }}></td><td style={s.td}></td><td style={s.td}></td><td style={s.td}></td><td style={s.td}></td><td style={s.td}></td><td style={s.td}></td></tr>
+                <tr key={'e' + i}><td style={{ ...s.td, height: 22 }}></td><td style={s.td}></td><td style={s.td}></td><td style={s.td}></td><td style={s.td}></td></tr>
               ))}
-              <tr style={{ background: '#f8f8f8' }}><td colSpan={6} style={{ ...s.td, fontWeight: 700, textAlign: 'right', fontSize: 11 }}>Labor Total</td><td style={s.td}></td></tr>
             </tbody>
           </table>
 
@@ -286,11 +292,16 @@ export default function PackagePreview({ jobId, pkgId, navigate }) {
           {(t.photos || []).length > 0 && (
             <>
               <div style={s.secTitle}>Photo Documentation — {t.date}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 8 }}>
+              <div style={{ fontSize: 10, color: '#888', fontStyle: 'italic', margin: '6px 0 8px', padding: '4px 8px', background: '#fffdf0', border: '1px solid #f5d87a', borderRadius: 4 }}>
+                Photos will display here when image storage is enabled in Phase 2. {t.photos.length} photo{t.photos.length !== 1 ? 's' : ''} attached.
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 4 }}>
                 {t.photos.map((ph, i) => (
-                  <div key={i} style={{ border: '1px solid #ccc', borderRadius: 4, padding: '12px 8px', textAlign: 'center', fontSize: 10, color: '#888' }}>
-                    <i className="ti ti-photo" style={{ fontSize: 20, display: 'block', marginBottom: 4 }} />
-                    {ph.name}<br />{ph.timestamp}
+                  <div key={i} style={{ border: '1px dashed #ccc', borderRadius: 4, padding: '16px 8px', textAlign: 'center', fontSize: 10, color: '#aaa', background: '#fafaf8' }}>
+                    <i className="ti ti-photo" style={{ fontSize: 24, display: 'block', marginBottom: 6, color: '#ccc' }} />
+                    <div style={{ fontWeight: 600, color: '#888' }}>{ph.name}</div>
+                    <div style={{ marginTop: 2 }}>{ph.date}</div>
+                    <div style={{ marginTop: 2, fontSize: 9 }}>{ph.timestamp}</div>
                   </div>
                 ))}
               </div>

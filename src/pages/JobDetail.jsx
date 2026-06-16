@@ -87,7 +87,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
       if (!selectedDirContact) return alert('Please select a contact from the directory.');
       const c = state.directory.contacts.find(x => x.id === selectedDirContact);
       if (!c) return;
-      const member = { id: genId(), contactId: c.id, name: c.first + ' ' + c.last, email: c.email, phone: c.phone, role: addUserRole, inviteSent: addUserRole !== 'super' };
+      const member = { id: genId(), contactId: c.id, name: c.first + ' ' + c.last, email: c.email, phone: c.phone, role: addUserRole, inviteSent: false, inviteStatus: 'not-sent' };
       dispatch({ type: 'ADD_JOB_MEMBER', jobId: job.id, member });
     } else {
       if (!newUserForm.first || !newUserForm.last || !newUserForm.email) return alert('First name, last name, and email are required.');
@@ -102,13 +102,11 @@ export default function JobDetail({ jobId, navigate, initialView }) {
       const newContact = { id: genId(), companyId, first: newUserForm.first, last: newUserForm.last, title: newUserForm.title, phone: newUserForm.phone, email: newUserForm.email };
       dispatch({ type: 'ADD_CONTACT', contact: newContact });
       // Add to job
-      const member = { id: genId(), contactId: newContact.id, name: newUserForm.first + ' ' + newUserForm.last, email: newUserForm.email, phone: newUserForm.phone, role: addUserRole, inviteSent: addUserRole !== 'super' };
+      const member = { id: genId(), contactId: newContact.id, name: newUserForm.first + ' ' + newUserForm.last, email: newUserForm.email, phone: newUserForm.phone, role: addUserRole, inviteSent: false, inviteStatus: 'not-sent' };
       dispatch({ type: 'ADD_JOB_MEMBER', jobId: job.id, member });
     }
     setShowAddUser(false);
-    if (addUserRole !== 'super') {
-      alert(`Invite email will be sent to ${userTab === 'dir' ? state.directory.contacts.find(x => x.id === selectedDirContact)?.email : newUserForm.email} once authentication is set up.`);
-    }
+
   }
 
   function removeUser(member) { setConfirmRemoveUser(member); }
@@ -123,6 +121,16 @@ export default function JobDetail({ jobId, navigate, initialView }) {
   function MemberRow({ member }) {
     const co = state.directory.contacts.find(c => c.id === member.contactId);
     const company = co ? state.directory.companies.find(x => x.id === co.companyId) : null;
+    const statusMap = {
+      'not-sent': { label: 'Not invited', cls: 'badge-gray' },
+      'invited': { label: 'Invite sent', cls: 'badge-info' },
+      'active': { label: 'Active', cls: 'badge-success' }
+    };
+    const status = statusMap[member.inviteStatus || 'not-sent'];
+    function sendInvite() {
+      dispatch({ type: 'UPDATE_JOB_MEMBER', jobId: job.id, memberId: member.id, data: { inviteSent: true, inviteStatus: 'invited' } });
+      alert(`Invite will be sent to ${member.email} once email authentication is enabled in Phase 3.`);
+    }
     return (
       <tr>
         <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -133,13 +141,21 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         <td>{member.phone}</td>
         <td>{company?.name || '—'}</td>
         <td>
-          {member.role !== 'super' && (
-            <span className={`badge ${member.inviteSent ? 'badge-info' : 'badge-gray'}`}>
-              {member.inviteSent ? 'Invite pending' : 'Not invited'}
-            </span>
-          )}
+          {member.role !== 'super'
+            ? <span className={`badge ${status.cls}`}>{status.label}</span>
+            : <span className="badge badge-gray">DocuSign only</span>
+          }
         </td>
-        <td><button className="btn btn-icon btn-sm btn-danger" onClick={() => removeUser(member)}><i className="ti ti-trash" /></button></td>
+        <td>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {member.role !== 'super' && member.inviteStatus !== 'active' && (
+              <button className="btn btn-sm" onClick={sendInvite} title="Send invite">
+                <i className="ti ti-mail" /> {member.inviteStatus === 'invited' ? 'Resend' : 'Invite'}
+              </button>
+            )}
+            <button className="btn btn-icon btn-sm btn-danger" onClick={() => removeUser(member)}><i className="ti ti-trash" /></button>
+          </div>
+        </td>
       </tr>
     );
   }
@@ -234,7 +250,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
             <div className="card-header">
               <div className="card-header-left">
                 <div className="card-title">Sub Project Managers</div>
-                <div className="card-subtitle">Internal PMs on this job — will receive email invite to Builden</div>
+                <div className="card-subtitle">Internal PMs assigned to this job</div>
               </div>
               <button className="btn btn-primary btn-sm" onClick={() => openAddUserModal('pm')}><i className="ti ti-plus" /> Add PM</button>
             </div>
@@ -250,8 +266,8 @@ export default function JobDetail({ jobId, navigate, initialView }) {
           <div className="card">
             <div className="card-header">
               <div className="card-header-left">
-                <div className="card-title">Foremen</div>
-                <div className="card-subtitle">Field foremen on this job — will receive email invite to Builden</div>
+                <div className="card-title">Sub Foremen</div>
+                <div className="card-subtitle">Field foremen assigned to this job</div>
               </div>
               <button className="btn btn-primary btn-sm" onClick={() => openAddUserModal('foreman')}><i className="ti ti-plus" /> Add foreman</button>
             </div>
@@ -300,16 +316,11 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         footer={<>
           <button className="btn" onClick={() => setShowAddUser(false)}>Cancel</button>
           <button className="btn btn-primary" onClick={saveUser}>
-            <i className="ti ti-check" /> {addUserRole !== 'super' ? 'Add & send invite' : 'Add to job'}
+            <i className="ti ti-check" /> Add to job
           </button>
         </>}>
 
-        {addUserRole !== 'super' && (
-          <div className="notice notice-info" style={{ marginBottom: 16 }}>
-            <i className="ti ti-mail" />
-            <span>This person will receive an email invite to join this job in Builden once authentication is enabled.</span>
-          </div>
-        )}
+
 
         <Tabs tabs={[{ id: 'dir', label: 'From directory' }, { id: 'new', label: 'Add new' }]} active={userTab} onChange={t => { setUserTab(t); setSelectedDirContact(null); setShowInlineCompany(false); }} />
 

@@ -28,13 +28,13 @@ function LaborRow({ row, index, workers, classifications, onChange, onRemove, is
   return (
     <tr>
       <td>
-        <select className="tbl-input" value={row.workerId || ''} onChange={e => handleWorkerChange(e.target.value)} style={{ minWidth: 160 }} disabled={isReadOnly}>
-          <option value="">— Select worker —</option>
-          {workers.map(w => {
-            const cls = classifications.find(c => c.id === w.classId);
-            return <option key={w.id} value={w.id}>{w.first} {w.last}{cls ? ' (' + cls.name + ')' : ''}</option>;
-          })}
-        </select>
+        <WorkerSelect
+          value={row.workerId || ''}
+          onChange={wid => handleWorkerChange(wid)}
+          workers={workers}
+          classifications={classifications}
+          disabled={isReadOnly}
+        />
       </td>
       <td style={{ color: '#888', fontSize: 12, fontWeight: 500 }}>{row.className || '—'}</td>
       <td><input className="tbl-input" type="number" min="0" step="0.5" value={row.reg || 0} onChange={e => onChange(index, { ...row, reg: parseFloat(e.target.value) || 0 })} style={{ width: 70 }} disabled={isReadOnly} /></td>

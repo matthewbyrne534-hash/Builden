@@ -4,6 +4,71 @@ import { useStore } from '../data/store';
 import { genId } from '../utils/helpers';
 import { Breadcrumb, Notice, FormGroup, Input } from '../components/UI';
 
+// ─── WORKER SELECT (searchable dropdown) ─────────────────────────────────────
+function WorkerSelect({ value, onChange, workers, classifications, disabled }) {
+  const [search, setSearch] = React.useState('');
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  const selected = workers.find(w => w.id === value);
+  const selectedCls = selected ? classifications.find(c => c.id === selected.classId) : null;
+  const filtered = workers.filter(w => {
+    const name = (w.first + ' ' + w.last).toLowerCase();
+    const cls = classifications.find(c => c.id === w.classId);
+    return name.includes(search.toLowerCase()) || (cls?.name || '').toLowerCase().includes(search.toLowerCase());
+  });
+  React.useEffect(() => {
+    function handle(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, []);
+  if (disabled) {
+    return <div style={{ fontSize: 13, fontWeight: 500, padding: '6px 8px' }}>{selected ? selected.first + ' ' + selected.last : '—'}</div>;
+  }
+  return (
+    <div ref={ref} style={{ position: 'relative', minWidth: 180 }}>
+      <div className="tbl-input" onClick={() => setOpen(v => !v)}
+        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}>
+        <span style={{ color: selected ? '#1a1a1a' : '#bbb' }}>
+          {selected ? selected.first + ' ' + selected.last + (selectedCls ? ' (' + selectedCls.name + ')' : '') : '— Select worker —'}
+        </span>
+        <i className="ti ti-chevron-down" style={{ fontSize: 11, color: '#aaa' }} />
+      </div>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #d8d8d6', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 200, minWidth: 220 }}>
+          <div style={{ padding: 8 }}>
+            <input autoFocus className="form-input" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search workers..." style={{ fontSize: 12, padding: '6px 10px' }} />
+          </div>
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            <div onClick={() => { onChange(''); setOpen(false); setSearch(''); }}
+              style={{ padding: '8px 12px', fontSize: 13, cursor: 'pointer', color: '#aaa', borderBottom: '1px solid #f2f2f0' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f4f4f2'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              — Clear selection —
+            </div>
+            {filtered.length === 0
+              ? <div style={{ padding: '8px 12px', fontSize: 12, color: '#aaa', fontStyle: 'italic' }}>No workers found</div>
+              : filtered.map(w => {
+                const cls = classifications.find(c => c.id === w.classId);
+                const isSelected = w.id === value;
+                return (
+                  <div key={w.id} onClick={() => { onChange(w.id); setOpen(false); setSearch(''); }}
+                    style={{ padding: '8px 12px', fontSize: 13, cursor: 'pointer', background: isSelected ? '#EBF3FB' : 'transparent', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#f4f4f2'; }}
+                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}>
+                    <span style={{ fontWeight: isSelected ? 700 : 500 }}>{w.first} {w.last}</span>
+                    <span style={{ fontSize: 11, color: '#888' }}>{cls?.name || ''}</span>
+                  </div>
+                );
+              })
+            }
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── LABOR ROW (foreman view - hours only, no rates shown) ───────────────────
 function LaborRow({ row, index, workers, classifications, onChange, onRemove, isReadOnly }) {
   const handleWorkerChange = (workerId) => {

@@ -176,6 +176,7 @@ function reducer(state, action) {
     case 'UPDATE_WORKER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, workers: j.workers.map(w => w.id === action.worker.id ? action.worker : w) } : j) };
     case 'REMOVE_WORKER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, workers: j.workers.filter(w => w.id !== action.workerId) } : j) };
     case 'ADD_JOB_MEMBER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, members: [...(j.members || []), action.member] } : j) };
+    case 'UPDATE_JOB_MEMBER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, members: (j.members || []).map(m => m.id === action.memberId ? { ...m, ...action.data } : m) } : j) };
     case 'REMOVE_JOB_MEMBER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, members: (j.members || []).filter(m => m.id !== action.memberId) } : j) };
     case 'ADD_PKG': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, packages: [...j.packages, action.pkg] } : j) };
     case 'UPDATE_PKG': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, packages: j.packages.map(p => p.id === action.pkgId ? { ...p, ...action.data } : p) } : j) };

@@ -356,12 +356,12 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
             <div style={{ marginTop: 6 }}>
               <select className="form-input" style={{ maxWidth: 300 }} value={ticket.foremanId || ''} disabled={isReadOnly}
                 onChange={e => {
-                  const w = job.workers.find(x => x.id === e.target.value);
+                  const m = (job.members || []).find(x => x.id === e.target.value);
                   setField('foremanId', e.target.value);
-                  setField('foremanName', w ? w.first + ' ' + w.last : '');
+                  setField('foremanName', m ? m.name : '');
                 }}>
                 <option value="">— Select foreman —</option>
-                {job.workers.map(w => <option key={w.id} value={w.id}>{w.first} {w.last}</option>)}
+                {(job.members || []).filter(m => m.role === 'foreman').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
           </div>

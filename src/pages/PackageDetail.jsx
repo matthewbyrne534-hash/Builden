@@ -4,16 +4,6 @@ import { useStore } from '../data/store';
 import { genId, fmt, calcPackageTotalsWithOhp } from '../utils/helpers';
 import { Breadcrumb, Badge, Notice, EmptyState, ConfirmModal, Modal, FormGroup, Input } from '../components/UI';
 
-function pkgStatusInfo(pkg) {
-  const s = pkg.pkgStatus || 'open';
-  const map = {
-    open: { label: 'Open / In Progress', cls: 'badge-gray' },
-    pending: { label: 'Pending GC Approval', cls: 'badge-warning' },
-    executed: { label: 'Executed', cls: 'badge-success' }
-  };
-  return map[s] || map.open;
-}
-
 function ticketStatusInfo(status) {
   const map = {
     draft: { label: 'Draft', cls: 'badge-gray' },

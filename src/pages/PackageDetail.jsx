@@ -232,6 +232,18 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
                       </tr>
                     );
                   })}
+                  <tr style={{ background: '#f8f8f6' }}>
+                    <td colSpan={4} style={{ fontWeight: 700, textAlign: 'right', fontSize: 12 }}>Material subtotal</td>
+                    <td style={{ fontWeight: 700 }}>{fmt(Object.values(matSummary).reduce((s, m) => s + m.qty * m.unitPrice, 0))}</td>
+                  </tr>
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: 'right', fontSize: 12, color: '#888' }}>OH&P ({prepForm.matOhp}%)</td>
+                    <td style={{ color: '#888' }}>{fmt(Object.values(matSummary).reduce((s, m) => s + m.qty * m.unitPrice, 0) * (parseFloat(prepForm.matOhp) || 0) / 100)}</td>
+                  </tr>
+                  <tr style={{ background: '#E8F5DA' }}>
+                    <td colSpan={4} style={{ fontWeight: 800, textAlign: 'right', fontSize: 12, color: '#2A6008' }}>Material total</td>
+                    <td style={{ fontWeight: 800, color: '#2A6008' }}>{fmt(Object.values(matSummary).reduce((s, m) => s + m.qty * m.unitPrice, 0) * (1 + (parseFloat(prepForm.matOhp) || 0) / 100))}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>

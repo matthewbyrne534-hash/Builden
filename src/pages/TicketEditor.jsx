@@ -45,9 +45,11 @@ function LaborRow({ row, index, workers, classifications, onChange, onRemove, is
   );
 }
 
-// ─── MATERIAL ROW (description and quantity only for foreman) ─────────────────
-function MaterialRow({ row, index, onChange, onRemove, isReadOnly }) {
+// ─── MATERIAL ROW ────────────────────────────────────────────────────────────
+function MaterialRow({ row, index, onChange, onRemove, isReadOnly, isSignedPM }) {
   const units = ['Each', 'Linear ft', 'Square ft', 'Lump sum', 'CY', 'LF', 'SF', 'LB', 'Ton'];
+  const total = (row.qty || 0) * (row.unitPrice || 0);
+  const canEdit = !isReadOnly || isSignedPM; // PM can edit invoices on signed tickets
   return (
     <tr>
       <td>
@@ -55,16 +57,21 @@ function MaterialRow({ row, index, onChange, onRemove, isReadOnly }) {
           onChange={e => onChange(index, { ...row, desc: e.target.value })} style={{ minWidth: 160 }} disabled={isReadOnly} />
       </td>
       <td>
-        <select className="tbl-input" value={row.unit || 'Each'} onChange={e => onChange(index, { ...row, unit: e.target.value })} style={{ minWidth: 90 }} disabled={isReadOnly}>
+        <select className="tbl-input" value={row.unit || 'Each'} onChange={e => onChange(index, { ...row, unit: e.target.value })} style={{ minWidth: 80 }} disabled={isReadOnly}>
           {units.map(u => <option key={u}>{u}</option>)}
         </select>
       </td>
       <td>
-        <input className="tbl-input" type="number" min="0" step="0.01" value={row.qty || 0}
-          onChange={e => onChange(index, { ...row, qty: parseFloat(e.target.value) || 0 })} style={{ width: 80 }} disabled={isReadOnly} />
+        <input className="tbl-input" type="number" min="0" step="0.01" value={row.unitPrice || 0}
+          onChange={e => onChange(index, { ...row, unitPrice: parseFloat(e.target.value) || 0 })} style={{ width: 80 }} disabled={isReadOnly} placeholder="0.00" />
       </td>
       <td>
-        <button className="btn btn-sm" style={{ fontSize: 11 }} onClick={() => document.getElementById('inv-' + index).click()} disabled={isReadOnly}>
+        <input className="tbl-input" type="number" min="0" step="1" value={row.qty || 0}
+          onChange={e => onChange(index, { ...row, qty: parseFloat(e.target.value) || 0 })} style={{ width: 70 }} disabled={isReadOnly} />
+      </td>
+      <td style={{ fontWeight: 600, color: '#444', whiteSpace: 'nowrap' }}>${total.toFixed(2)}</td>
+      <td>
+        <button className="btn btn-sm" style={{ fontSize: 11 }} onClick={() => document.getElementById('inv-' + index).click()} disabled={!canEdit}>
           <i className="ti ti-paperclip" /> {row.invoiceName ? 'Change' : 'Attach'}
         </button>
         <input type="file" id={'inv-' + index} style={{ display: 'none' }} accept=".pdf,.jpg,.png"
@@ -83,6 +90,14 @@ function VendorRow({ row, index, onChange, onRemove, isReadOnly }) {
       <td><input className="tbl-input" type="text" value={row.name || ''} placeholder="Vendor / sub name" onChange={e => onChange(index, { ...row, name: e.target.value })} style={{ minWidth: 130 }} disabled={isReadOnly} /></td>
       <td><input className="tbl-input" type="text" value={row.desc || ''} placeholder="Description" onChange={e => onChange(index, { ...row, desc: e.target.value })} style={{ minWidth: 130 }} disabled={isReadOnly} /></td>
       <td><input className="tbl-input" type="number" min="0" step="0.01" value={row.amount || 0} onChange={e => onChange(index, { ...row, amount: parseFloat(e.target.value) || 0 })} style={{ width: 90 }} disabled={isReadOnly} /></td>
+      <td>
+        <button className="btn btn-sm" style={{ fontSize: 11 }} onClick={() => document.getElementById('vinv-' + index).click()}>
+          <i className="ti ti-paperclip" /> {row.invoiceName ? 'Change' : 'Attach'}
+        </button>
+        <input type="file" id={'vinv-' + index} style={{ display: 'none' }} accept=".pdf,.jpg,.png"
+          onChange={e => onChange(index, { ...row, invoiceName: e.target.files[0]?.name || row.invoiceName })} />
+        {row.invoiceName && <div style={{ fontSize: 10, color: '#185FA5', marginTop: 3 }}>{row.invoiceName}</div>}
+      </td>
       <td>{!isReadOnly && <button onClick={() => onRemove(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: 4 }}><i className="ti ti-x" /></button>}</td>
     </tr>
   );
@@ -156,7 +171,7 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
   return (
     <div>
       <Breadcrumb items={[
-        { label: 'Jobs', onClick: () => navigate('jobs') },
+        { label: 'Dashboard', onClick: () => navigate('dashboard') },
         { label: job.num, onClick: () => navigate('job-detail', { jobId: job.id }) },
         { label: pkg.num, onClick: () => navigate('package-detail', { jobId: job.id, pkgId: pkg.id }) },
         { label: ticket.num }
@@ -256,15 +271,17 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
             <thead>
               <tr>
                 <th>Description</th>
-                <th style={{ width: 100 }}>Unit</th>
-                <th style={{ width: 85 }}>Qty</th>
-                <th style={{ width: 120 }}>Receipt</th>
+                <th style={{ width: 90 }}>Unit</th>
+                <th style={{ width: 90 }}>Unit price</th>
+                <th style={{ width: 70 }}>Qty</th>
+                <th style={{ width: 80 }}>Total</th>
+                <th style={{ width: 110 }}>Receipt</th>
                 <th style={{ width: 36 }}></th>
               </tr>
             </thead>
             <tbody>
               {ticket.materials.map((row, i) => (
-                <MaterialRow key={row.id || i} row={row} index={i} onChange={setMaterial} onRemove={removeMaterial} isReadOnly={isReadOnly} />
+                <MaterialRow key={row.id || i} row={row} index={i} onChange={setMaterial} onRemove={removeMaterial} isReadOnly={isReadOnly} isSignedPM={isReadOnly} />
               ))}
               {ticket.materials.length === 0 && (
                 <tr><td colSpan={5} style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', padding: '12px 10px' }}>No materials added yet.</td></tr>
@@ -290,7 +307,8 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
               <tr>
                 <th>Vendor / sub name</th>
                 <th>Description</th>
-                <th style={{ width: 110 }}>Amount ($)</th>
+                <th style={{ width: 100 }}>Amount ($)</th>
+                <th style={{ width: 110 }}>Receipt</th>
                 <th style={{ width: 36 }}></th>
               </tr>
             </thead>
@@ -378,12 +396,12 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
             <div style={{ marginTop: 6 }}>
               <select className="form-input" style={{ maxWidth: 300 }} value={ticket.superId || ''} disabled={isReadOnly}
                 onChange={e => {
-                  const s = job.supers.find(x => x.id === e.target.value);
+                  const s = (job.members || []).find(x => x.id === e.target.value);
                   setField('superId', e.target.value);
                   setField('superName', s ? s.name : '');
                 }}>
                 <option value="">— Select superintendent —</option>
-                {job.supers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {(job.members || []).filter(m => m.role === 'super').map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
           </div>

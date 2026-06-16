@@ -1,7 +1,7 @@
 // src/pages/PackagePreview.jsx
 import React from 'react';
 import { useStore } from '../data/store';
-import { fmt, calcPackageTotalsWithOhp } from '../utils/helpers';
+import { fmt } from '../utils/helpers';
 import { Breadcrumb } from '../components/UI';
 
 export default function PackagePreview({ jobId, pkgId, navigate }) {

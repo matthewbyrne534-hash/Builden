@@ -10,6 +10,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
   const view = initialView || null;
 
   // Package state
+  const [pkgFilter, setPkgFilter] = useState('all');
   const [showNewPkg, setShowNewPkg] = useState(false);
   const [editPkg, setEditPkg] = useState(null);
   const [confirmDeletePkg, setConfirmDeletePkg] = useState(null);
@@ -186,6 +187,12 @@ export default function JobDetail({ jobId, navigate, initialView }) {
               <div className="card-subtitle">{job.num} - {job.name}</div>
             </div>
             <div className="card-actions">
+              <select className="form-input" value={pkgFilter} onChange={e => setPkgFilter(e.target.value)} style={{ fontSize: 12, width: 'auto', minWidth: 160 }}>
+                <option value="all">All packages</option>
+                <option value="open">Open / In Progress</option>
+                <option value="pending">Pending GC Approval</option>
+                <option value="executed">Executed</option>
+              </select>
               <button className="btn btn-sm" onClick={() => navigate('job-setup', { jobId: job.id })}><i className="ti ti-settings" /> Setup</button>
               <button className="btn btn-primary btn-sm" onClick={openNewPkg}><i className="ti ti-plus" /> New package</button>
             </div>
@@ -193,7 +200,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
           {job.packages.length === 0 ? (
             <EmptyState icon="folders" message="No T&M packages yet. Create your first package." />
           ) : (
-            job.packages.map(p => {
+            job.packages.filter(p => pkgFilter === 'all' || (p.pkgStatus || 'open') === pkgFilter).map(p => {
               const tots = calcPackageTotals(p);
               const st = pkgStatusInfo(p);
               return (

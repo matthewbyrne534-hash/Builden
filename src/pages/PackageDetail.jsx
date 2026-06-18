@@ -194,7 +194,7 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
 
         {Object.keys(laborByClass).length > 0 && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Labor hours by classification</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Labor Summary</div>
             <div className="tbl-wrap">
               <table className="tbl">
                 <thead><tr><th>Classification</th><th>Reg hrs</th><th>OT hrs</th><th>DT hrs</th><th>Reg rate</th><th>OT rate</th><th>DT rate</th><th>Subtotal</th></tr></thead>
@@ -210,6 +210,10 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
                       </tr>
                     );
                   })}
+                  <tr style={{ background: '#f8f8f6' }}>
+                    <td colSpan={7} style={{ fontWeight: 700, textAlign: 'right', fontSize: 12 }}>Labor subtotal</td>
+                    <td style={{ fontWeight: 700 }}>{fmt(Object.values(laborByClass).reduce((s, c) => s + c.reg * c.regRate + c.ot * c.otRate + c.dt * c.dtRate, 0))}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -218,7 +222,7 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
 
         {Object.keys(matSummary).length > 0 && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Materials summary</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Material Summary</div>
             <div className="tbl-wrap">
               <table className="tbl">
                 <thead><tr><th>Description</th><th>Unit</th><th>Qty</th><th>Unit price</th><th>Subtotal</th></tr></thead>
@@ -235,14 +239,6 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
                   <tr style={{ background: '#f8f8f6' }}>
                     <td colSpan={4} style={{ fontWeight: 700, textAlign: 'right', fontSize: 12 }}>Material subtotal</td>
                     <td style={{ fontWeight: 700 }}>{fmt(Object.values(matSummary).reduce((s, m) => s + m.qty * m.unitPrice, 0))}</td>
-                  </tr>
-                  <tr>
-                    <td colSpan={4} style={{ textAlign: 'right', fontSize: 12, color: '#888' }}>OH&P ({prepForm.matOhp}%)</td>
-                    <td style={{ color: '#888' }}>{fmt(Object.values(matSummary).reduce((s, m) => s + m.qty * m.unitPrice, 0) * (parseFloat(prepForm.matOhp) || 0) / 100)}</td>
-                  </tr>
-                  <tr style={{ background: '#E8F5DA' }}>
-                    <td colSpan={4} style={{ fontWeight: 800, textAlign: 'right', fontSize: 12, color: '#2A6008' }}>Material total</td>
-                    <td style={{ fontWeight: 800, color: '#2A6008' }}>{fmt(Object.values(matSummary).reduce((s, m) => s + m.qty * m.unitPrice, 0) * (1 + (parseFloat(prepForm.matOhp) || 0) / 100))}</td>
                   </tr>
                 </tbody>
               </table>

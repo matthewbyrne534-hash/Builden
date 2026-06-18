@@ -34,9 +34,14 @@ function WorkerSelect({ value, onChange, workers, classifications, disabled }) {
       if (panelRef.current && panelRef.current.contains(e.target)) return;
       setOpen(false);
     }
+    function handleScroll(e) {
+      // Don't close if the scroll happened inside the dropdown panel itself
+      if (panelRef.current && panelRef.current.contains(e.target)) return;
+      setOpen(false);
+    }
     document.addEventListener('mousedown', handle);
-    window.addEventListener('scroll', () => setOpen(false), true);
-    return () => { document.removeEventListener('mousedown', handle); window.removeEventListener('scroll', () => setOpen(false), true); };
+    window.addEventListener('scroll', handleScroll, true);
+    return () => { document.removeEventListener('mousedown', handle); window.removeEventListener('scroll', handleScroll, true); };
   }, []);
 
   if (disabled) {
@@ -57,7 +62,7 @@ function WorkerSelect({ value, onChange, workers, classifications, disabled }) {
             <input autoFocus className="form-input" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search workers..." style={{ fontSize: 12, padding: '6px 10px' }} />
           </div>
-          <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+          <div style={{ maxHeight: 240, overflowY: 'scroll' }}>
             <div onClick={() => { onChange(''); setOpen(false); setSearch(''); }}
               style={{ padding: '8px 12px', fontSize: 13, cursor: 'pointer', color: '#aaa', borderBottom: '1px solid #f2f2f0' }}
               onMouseEnter={e => e.currentTarget.style.background = '#f4f4f2'}
@@ -154,9 +159,14 @@ function MaterialSelect({ value, onChange, existingMaterials, disabled }) {
       if (panelRef.current && panelRef.current.contains(e.target)) return;
       setOpen(false);
     }
+    function handleScroll(e) {
+      // Don't close if the scroll happened inside the dropdown panel itself
+      if (panelRef.current && panelRef.current.contains(e.target)) return;
+      setOpen(false);
+    }
     document.addEventListener('mousedown', handle);
-    window.addEventListener('scroll', () => setOpen(false), true);
-    return () => { document.removeEventListener('mousedown', handle); window.removeEventListener('scroll', () => setOpen(false), true); };
+    window.addEventListener('scroll', handleScroll, true);
+    return () => { document.removeEventListener('mousedown', handle); window.removeEventListener('scroll', handleScroll, true); };
   }, []);
 
   if (disabled) {
@@ -185,7 +195,7 @@ function MaterialSelect({ value, onChange, existingMaterials, disabled }) {
             <input autoFocus className="form-input" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search materials..." style={{ fontSize: 12, padding: '6px 10px' }} />
           </div>
-          <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+          <div style={{ maxHeight: 240, overflowY: 'scroll' }}>
             {filtered.length === 0
               ? <div style={{ padding: '8px 12px', fontSize: 12, color: '#aaa', fontStyle: 'italic' }}>No matches</div>
               : filtered.map((m, i) => (

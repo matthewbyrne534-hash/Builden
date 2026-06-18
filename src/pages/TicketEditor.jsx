@@ -1,5 +1,6 @@
 // src/pages/TicketEditor.jsx
 import React, { useState, useCallback, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useStore } from '../data/store';
 import { genId } from '../utils/helpers';
 import { Breadcrumb, Notice, FormGroup, Input } from '../components/UI';
@@ -8,7 +9,9 @@ import { Breadcrumb, Notice, FormGroup, Input } from '../components/UI';
 function WorkerSelect({ value, onChange, workers, classifications, disabled }) {
   const [search, setSearch] = React.useState('');
   const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
+  const [coords, setCoords] = React.useState({ top: 0, left: 0, width: 220 });
+  const triggerRef = React.useRef(null);
+  const panelRef = React.useRef(null);
   const selected = workers.find(w => w.id === value);
   const selectedCls = selected ? classifications.find(c => c.id === selected.classId) : null;
   const filtered = workers.filter(w => {
@@ -16,30 +19,45 @@ function WorkerSelect({ value, onChange, workers, classifications, disabled }) {
     const cls = classifications.find(c => c.id === w.classId);
     return name.includes(search.toLowerCase()) || (cls?.name || '').toLowerCase().includes(search.toLowerCase());
   });
+
+  function openPanel() {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setCoords({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 220) });
+    }
+    setOpen(true);
+  }
+
   React.useEffect(() => {
-    function handle(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    function handle(e) {
+      if (triggerRef.current && triggerRef.current.contains(e.target)) return;
+      if (panelRef.current && panelRef.current.contains(e.target)) return;
+      setOpen(false);
+    }
     document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
+    window.addEventListener('scroll', () => setOpen(false), true);
+    return () => { document.removeEventListener('mousedown', handle); window.removeEventListener('scroll', () => setOpen(false), true); };
   }, []);
+
   if (disabled) {
     return <div style={{ fontSize: 13, fontWeight: 500, padding: '6px 8px' }}>{selected ? selected.first + ' ' + selected.last : '—'}</div>;
   }
   return (
-    <div ref={ref} style={{ position: 'relative', minWidth: 180 }}>
-      <div className="tbl-input" onClick={() => setOpen(v => !v)}
-        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}>
-        <span style={{ color: selected ? '#1a1a1a' : '#bbb' }}>
+    <>
+      <div ref={triggerRef} className="tbl-input" onClick={() => (open ? setOpen(false) : openPanel())}
+        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none', minWidth: 180 }}>
+        <span style={{ color: selected ? '#1a1a1a' : '#bbb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {selected ? selected.first + ' ' + selected.last + (selectedCls ? ' (' + selectedCls.name + ')' : '') : '— Select worker —'}
         </span>
-        <i className="ti ti-chevron-down" style={{ fontSize: 11, color: '#aaa' }} />
+        <i className="ti ti-chevron-down" style={{ fontSize: 11, color: '#aaa', marginLeft: 6 }} />
       </div>
-      {open && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #d8d8d6', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 200, minWidth: 220 }}>
+      {open && ReactDOM.createPortal(
+        <div ref={panelRef} style={{ position: 'fixed', top: coords.top, left: coords.left, width: coords.width, background: '#fff', border: '1px solid #d8d8d6', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.18)', zIndex: 9999 }}>
           <div style={{ padding: 8 }}>
             <input autoFocus className="form-input" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search workers..." style={{ fontSize: 12, padding: '6px 10px' }} />
           </div>
-          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+          <div style={{ maxHeight: 240, overflowY: 'auto' }}>
             <div onClick={() => { onChange(''); setOpen(false); setSearch(''); }}
               style={{ padding: '8px 12px', fontSize: 13, cursor: 'pointer', color: '#aaa', borderBottom: '1px solid #f2f2f0' }}
               onMouseEnter={e => e.currentTarget.style.background = '#f4f4f2'}
@@ -63,9 +81,10 @@ function WorkerSelect({ value, onChange, workers, classifications, disabled }) {
               })
             }
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
 
@@ -115,21 +134,35 @@ function MaterialSelect({ value, onChange, existingMaterials, disabled }) {
   const [search, setSearch] = React.useState('');
   const [open, setOpen] = React.useState(false);
   const [addingNew, setAddingNew] = React.useState(false);
-  const ref = React.useRef(null);
+  const [coords, setCoords] = React.useState({ top: 0, left: 0, width: 220 });
+  const triggerRef = React.useRef(null);
+  const panelRef = React.useRef(null);
 
   const filtered = existingMaterials.filter(m => m.desc.toLowerCase().includes(search.toLowerCase()));
 
+  function openPanel() {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setCoords({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 240) });
+    }
+    setOpen(true);
+  }
+
   React.useEffect(() => {
-    function handle(e) { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); } }
+    function handle(e) {
+      if (triggerRef.current && triggerRef.current.contains(e.target)) return;
+      if (panelRef.current && panelRef.current.contains(e.target)) return;
+      setOpen(false);
+    }
     document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
+    window.addEventListener('scroll', () => setOpen(false), true);
+    return () => { document.removeEventListener('mousedown', handle); window.removeEventListener('scroll', () => setOpen(false), true); };
   }, []);
 
   if (disabled) {
     return <div style={{ fontSize: 13, fontWeight: 500, padding: '6px 8px' }}>{value || '—'}</div>;
   }
 
-  // No existing materials yet (first ticket in package) — just show a free-text input
   if (existingMaterials.length === 0 && !addingNew) {
     return (
       <input className="tbl-input" type="text" value={value || ''} placeholder="Material description"
@@ -138,21 +171,21 @@ function MaterialSelect({ value, onChange, existingMaterials, disabled }) {
   }
 
   return (
-    <div ref={ref} style={{ position: 'relative', minWidth: 180 }}>
-      <div className="tbl-input" onClick={() => setOpen(v => !v)}
-        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}>
+    <>
+      <div ref={triggerRef} className="tbl-input" onClick={() => (open ? setOpen(false) : openPanel())}
+        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none', minWidth: 160 }}>
         <span style={{ color: value ? '#1a1a1a' : '#bbb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {value || '— Select material —'}
         </span>
-        <i className="ti ti-chevron-down" style={{ fontSize: 11, color: '#aaa', flexShrink: 0 }} />
+        <i className="ti ti-chevron-down" style={{ fontSize: 11, color: '#aaa', flexShrink: 0, marginLeft: 6 }} />
       </div>
-      {open && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, background: '#fff', border: '1px solid #d8d8d6', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 200, minWidth: 260 }}>
+      {open && ReactDOM.createPortal(
+        <div ref={panelRef} style={{ position: 'fixed', top: coords.top, left: coords.left, width: coords.width, background: '#fff', border: '1px solid #d8d8d6', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.18)', zIndex: 9999 }}>
           <div style={{ padding: 8 }}>
             <input autoFocus className="form-input" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search materials..." style={{ fontSize: 12, padding: '6px 10px' }} />
           </div>
-          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+          <div style={{ maxHeight: 240, overflowY: 'auto' }}>
             {filtered.length === 0
               ? <div style={{ padding: '8px 12px', fontSize: 12, color: '#aaa', fontStyle: 'italic' }}>No matches</div>
               : filtered.map((m, i) => (
@@ -174,9 +207,10 @@ function MaterialSelect({ value, onChange, existingMaterials, disabled }) {
               <i className="ti ti-plus" /> Add new material
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
 

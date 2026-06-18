@@ -112,17 +112,10 @@ export function buildPkgNum(numSystem, pkgSeq) {
 }
 
 export const AUTH_TYPES = [
-  'Approved Submittal Revision',
   'Authorization Email',
   'Change Event',
-  'Design Team Clarification',
   'Emergency Work Authorization',
-  'Field Work Order',
   'Meeting Minutes Directing the Work',
-  'Notice to Proceed on T&M Basis',
-  'Other',
-  'Revised Drawing',
-  'Revised Specification',
   'RFI Response',
-  'Sketch or Bulletin'
+  'Other'
 ];

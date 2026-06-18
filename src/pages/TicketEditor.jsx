@@ -111,8 +111,16 @@ function LaborRow({ row, index, workers, classifications, onChange, onRemove, is
 }
 
 // ─── MATERIAL ROW ────────────────────────────────────────────────────────────
+const UNIT_GROUPS = [
+  { label: 'Time', units: ['days', 'hours', 'months', 'weeks', 'years'] },
+  { label: 'Amount', units: ['ea', 'ls'] },
+  { label: 'Length', units: ['lf', 'm', 'mm'] },
+  { label: 'Area', units: ['sf', 'sy', 's^2'] },
+  { label: 'Volume', units: ['cy', 'm^3'] },
+  { label: 'Mass', units: ['kg', 'lbs', 'ton'] }
+];
+
 function MaterialRow({ row, index, onChange, onRemove, isReadOnly, isSignedPM }) {
-  const units = ['Each', 'Linear ft', 'Square ft', 'Lump sum', 'CY', 'LF', 'SF', 'LB', 'Ton'];
   const total = (row.qty || 0) * (row.unitPrice || 0);
   const canEdit = !isReadOnly || isSignedPM; // PM can edit invoices on signed tickets
   return (
@@ -122,8 +130,12 @@ function MaterialRow({ row, index, onChange, onRemove, isReadOnly, isSignedPM })
           onChange={e => onChange(index, { ...row, desc: e.target.value })} style={{ minWidth: 160 }} disabled={isReadOnly} />
       </td>
       <td>
-        <select className="tbl-input" value={row.unit || 'Each'} onChange={e => onChange(index, { ...row, unit: e.target.value })} style={{ minWidth: 80 }} disabled={isReadOnly}>
-          {units.map(u => <option key={u}>{u}</option>)}
+        <select className="tbl-input" value={row.unit || 'ea'} onChange={e => onChange(index, { ...row, unit: e.target.value })} style={{ minWidth: 80 }} disabled={isReadOnly}>
+          {UNIT_GROUPS.map(g => (
+            <optgroup key={g.label} label={g.label}>
+              {g.units.map(u => <option key={u} value={u}>{u}</option>)}
+            </optgroup>
+          ))}
         </select>
       </td>
       <td>
@@ -205,7 +217,7 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
 
   const setField = (field, value) => setTicket(t => ({ ...t, [field]: value }));
   const addLabor = () => setTicket(t => ({ ...t, labor: [...t.labor, { id: genId(), workerId: '', workerName: '', classId: '', className: '', reg: 0, ot: 0, dt: 0, regRate: 0, otRate: 0, dtRate: 0 }] }));
-  const addMaterial = () => setTicket(t => ({ ...t, materials: [...t.materials, { id: genId(), desc: '', unit: 'Each', qty: 0, unitPrice: 0, invoiceName: '' }] }));
+  const addMaterial = () => setTicket(t => ({ ...t, materials: [...t.materials, { id: genId(), desc: '', unit: 'ea', qty: 0, unitPrice: 0, invoiceName: '' }] }));
   const addVendor = () => setTicket(t => ({ ...t, vendors: [...t.vendors, { id: genId(), name: '', desc: '', amount: 0 }] }));
   const addPhotos = (files) => {
     const newPhotos = Array.from(files).map(f => ({ id: genId(), name: f.name, date: new Date().toLocaleDateString(), timestamp: new Date().toLocaleString() }));

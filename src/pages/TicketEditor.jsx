@@ -110,6 +110,76 @@ function LaborRow({ row, index, workers, classifications, onChange, onRemove, is
   );
 }
 
+// ─── MATERIAL SELECT (searchable, pulls from existing package materials) ────
+function MaterialSelect({ value, onChange, existingMaterials, disabled }) {
+  const [search, setSearch] = React.useState('');
+  const [open, setOpen] = React.useState(false);
+  const [addingNew, setAddingNew] = React.useState(false);
+  const ref = React.useRef(null);
+
+  const filtered = existingMaterials.filter(m => m.desc.toLowerCase().includes(search.toLowerCase()));
+
+  React.useEffect(() => {
+    function handle(e) { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); } }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, []);
+
+  if (disabled) {
+    return <div style={{ fontSize: 13, fontWeight: 500, padding: '6px 8px' }}>{value || '—'}</div>;
+  }
+
+  // No existing materials yet (first ticket in package) — just show a free-text input
+  if (existingMaterials.length === 0 && !addingNew) {
+    return (
+      <input className="tbl-input" type="text" value={value || ''} placeholder="Material description"
+        onChange={e => onChange({ desc: e.target.value, unit: null })} style={{ minWidth: 160 }} />
+    );
+  }
+
+  return (
+    <div ref={ref} style={{ position: 'relative', minWidth: 180 }}>
+      <div className="tbl-input" onClick={() => setOpen(v => !v)}
+        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}>
+        <span style={{ color: value ? '#1a1a1a' : '#bbb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {value || '— Select material —'}
+        </span>
+        <i className="ti ti-chevron-down" style={{ fontSize: 11, color: '#aaa', flexShrink: 0 }} />
+      </div>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, background: '#fff', border: '1px solid #d8d8d6', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 200, minWidth: 260 }}>
+          <div style={{ padding: 8 }}>
+            <input autoFocus className="form-input" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search materials..." style={{ fontSize: 12, padding: '6px 10px' }} />
+          </div>
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {filtered.length === 0
+              ? <div style={{ padding: '8px 12px', fontSize: 12, color: '#aaa', fontStyle: 'italic' }}>No matches</div>
+              : filtered.map((m, i) => (
+                <div key={i} onClick={() => { onChange({ desc: m.desc, unit: m.unit }); setOpen(false); setSearch(''); }}
+                  style={{ padding: '8px 12px', fontSize: 13, cursor: 'pointer' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#f4f4f2'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <div style={{ fontWeight: 500 }}>{m.desc}</div>
+                  <div style={{ fontSize: 11, color: '#888' }}>Unit: {m.unit}</div>
+                </div>
+              ))
+            }
+          </div>
+          <div style={{ borderTop: '1px solid #f0f0ee' }}>
+            <div onClick={() => { setOpen(false); setAddingNew(true); onChange({ desc: '', unit: null }); }}
+              style={{ padding: '10px 12px', fontSize: 13, fontWeight: 600, color: '#185FA5', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f4f4f2'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <i className="ti ti-plus" /> Add new material
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── MATERIAL ROW ────────────────────────────────────────────────────────────
 const UNIT_GROUPS = [
   { label: 'Time', units: ['days', 'hours', 'months', 'weeks', 'years'] },
@@ -120,14 +190,32 @@ const UNIT_GROUPS = [
   { label: 'Mass', units: ['kg', 'lbs', 'ton'] }
 ];
 
-function MaterialRow({ row, index, onChange, onRemove, isReadOnly, isSignedPM }) {
+function MaterialRow({ row, index, onChange, onRemove, isReadOnly, isSignedPM, existingMaterials }) {
   const total = (row.qty || 0) * (row.unitPrice || 0);
   const canEdit = !isReadOnly || isSignedPM; // PM can edit invoices on signed tickets
+  const [freeTextMode, setFreeTextMode] = React.useState(!row.desc && existingMaterials.length > 0 ? null : true);
+
+  function handleMaterialPick(picked) {
+    if (picked.unit) {
+      // Existing material selected — autofill desc + unit only
+      onChange(index, { ...row, desc: picked.desc, unit: picked.unit });
+      setFreeTextMode(false);
+    } else {
+      // "Add new material" chosen — switch to free text entry
+      onChange(index, { ...row, desc: '' });
+      setFreeTextMode(true);
+    }
+  }
+
   return (
     <tr>
       <td>
-        <input className="tbl-input" type="text" value={row.desc || ''} placeholder="Material description"
-          onChange={e => onChange(index, { ...row, desc: e.target.value })} style={{ minWidth: 160 }} disabled={isReadOnly} />
+        {freeTextMode === true || existingMaterials.length === 0 ? (
+          <input className="tbl-input" type="text" value={row.desc || ''} placeholder="Material description"
+            onChange={e => onChange(index, { ...row, desc: e.target.value })} style={{ minWidth: 160 }} disabled={isReadOnly} />
+        ) : (
+          <MaterialSelect value={row.desc} onChange={handleMaterialPick} existingMaterials={existingMaterials} disabled={isReadOnly} />
+        )}
       </td>
       <td>
         <select className="tbl-input" value={row.unit || 'ea'} onChange={e => onChange(index, { ...row, unit: e.target.value })} style={{ minWidth: 80 }} disabled={isReadOnly}>
@@ -214,6 +302,18 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
 
   const isReadOnly = ['signed', 'approved', 'submitted'].includes(ticket.status);
   const prevDescs = [...new Set(pkg.tickets.filter(t => t.id !== ticketId).map(t => t.desc).filter(Boolean))];
+
+  // Unique materials (desc + unit) used anywhere else in this package, for the material picker dropdown
+  const existingMaterialsMap = {};
+  pkg.tickets.forEach(t => {
+    if (t.id === ticketId) return; // skip current ticket's own rows
+    (t.materials || []).forEach(m => {
+      if (!m.desc) return;
+      const k = m.desc + '|' + m.unit;
+      if (!existingMaterialsMap[k]) existingMaterialsMap[k] = { desc: m.desc, unit: m.unit };
+    });
+  });
+  const existingMaterials = Object.values(existingMaterialsMap);
 
   const setField = (field, value) => setTicket(t => ({ ...t, [field]: value }));
   const addLabor = () => setTicket(t => ({ ...t, labor: [...t.labor, { id: genId(), workerId: '', workerName: '', classId: '', className: '', reg: 0, ot: 0, dt: 0, regRate: 0, otRate: 0, dtRate: 0 }] }));
@@ -368,7 +468,7 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
             </thead>
             <tbody>
               {ticket.materials.map((row, i) => (
-                <MaterialRow key={row.id || i} row={row} index={i} onChange={setMaterial} onRemove={removeMaterial} isReadOnly={isReadOnly} isSignedPM={isReadOnly} />
+                <MaterialRow key={row.id || i} row={row} index={i} onChange={setMaterial} onRemove={removeMaterial} isReadOnly={isReadOnly} isSignedPM={isReadOnly} existingMaterials={existingMaterials} />
               ))}
               {ticket.materials.length === 0 && (
                 <tr><td colSpan={5} style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', padding: '12px 10px' }}>No materials added yet.</td></tr>

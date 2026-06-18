@@ -205,7 +205,7 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
 
   const setField = (field, value) => setTicket(t => ({ ...t, [field]: value }));
   const addLabor = () => setTicket(t => ({ ...t, labor: [...t.labor, { id: genId(), workerId: '', workerName: '', classId: '', className: '', reg: 0, ot: 0, dt: 0, regRate: 0, otRate: 0, dtRate: 0 }] }));
-  const addMaterial = () => setTicket(t => ({ ...t, materials: [...t.materials, { id: genId(), desc: '', unit: 'Each', qty: 0, rate: 0, invoiceName: '' }] }));
+  const addMaterial = () => setTicket(t => ({ ...t, materials: [...t.materials, { id: genId(), desc: '', unit: 'Each', qty: 0, unitPrice: 0, invoiceName: '' }] }));
   const addVendor = () => setTicket(t => ({ ...t, vendors: [...t.vendors, { id: genId(), name: '', desc: '', amount: 0 }] }));
   const addPhotos = (files) => {
     const newPhotos = Array.from(files).map(f => ({ id: genId(), name: f.name, date: new Date().toLocaleDateString(), timestamp: new Date().toLocaleString() }));

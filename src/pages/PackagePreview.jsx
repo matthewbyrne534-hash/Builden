@@ -133,7 +133,7 @@ export default function PackagePreview({ jobId, pkgId, navigate }) {
                 <th style={s.th}>Classification</th><th style={s.th}>Worker(s)</th>
                 <th style={s.th}>Reg hrs</th><th style={s.th}>OT hrs</th><th style={s.th}>DT hrs</th>
                 <th style={s.th}>Reg rate</th><th style={s.th}>OT rate</th><th style={s.th}>DT rate</th>
-                <th style={s.th}>Subtotal</th>
+                <th style={{ ...s.th, width: 110 }}>Subtotal</th>
               </tr></thead>
               <tbody>
                 {Object.values(laborByClass).map((c, i) => {
@@ -163,7 +163,7 @@ export default function PackagePreview({ jobId, pkgId, navigate }) {
             <table style={s.tbl}>
               <thead><tr>
                 <th style={s.th}>Description</th><th style={s.th}>Unit</th>
-                <th style={s.th}>Qty</th><th style={s.th}>Unit price</th><th style={s.th}>Subtotal</th>
+                <th style={s.th}>Qty</th><th style={s.th}>Unit price</th><th style={{ ...s.th, width: 110 }}>Subtotal</th>
               </tr></thead>
               <tbody>
                 {Object.values(matByDesc).map((m, i) => {

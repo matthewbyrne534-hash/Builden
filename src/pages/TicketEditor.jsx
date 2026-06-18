@@ -226,7 +226,17 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
     alert(`Ticket ${ticket.num} submitted.\n\nDocuSign sent to ${ticket.foremanName} (Foreman).\nOnce signed, it routes to ${ticket.superName} for superintendent sign-off.`);
     navigate('package-detail', { jobId: job.id, pkgId: pkg.id });
   }
-  function markSigned() { saveToStore('signed'); navigate('package-detail', { jobId: job.id, pkgId: pkg.id }); }
+  function markSigned() {
+    const now = new Date().toLocaleString();
+    setTicket(t => ({ ...t, foremanSignedAt: now, superSignedAt: now }));
+    saveToStore2('signed', { foremanSignedAt: now, superSignedAt: now });
+    navigate('package-detail', { jobId: job.id, pkgId: pkg.id });
+  }
+  function saveToStore2(newStatus, extra) {
+    const data = { ...ticket, ...extra };
+    if (newStatus) data.status = newStatus;
+    dispatch({ type: 'UPDATE_TICKET', jobId: job.id, pkgId: pkg.id, ticketId: ticket.id, data });
+  }
 
   // Total hours summary for display
   const totalReg = ticket.labor.reduce((s, r) => s + (r.reg || 0), 0);
@@ -430,47 +440,61 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
             <div className="sec-sub">Foreman signs first via DocuSign, then routes to GC superintendent</div>
           </div>
         </div>
-        <div className="sig-block">
+
+        {/* FOREMAN ROW */}
+        <div style={{ display: 'grid', gridTemplateColumns: '34px 1fr 140px 130px', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid #f2f2f0' }}>
           <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#FFF3DC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#8A5000', flexShrink: 0 }}>
             {ticket.foremanName ? ticket.foremanName.split(' ').map(w => w[0]).join('').substr(0, 2).toUpperCase() : '?'}
           </div>
-          <div className="sig-info">
-            <div className="sig-name">Foreman / Contractor Representative</div>
-            <div style={{ marginTop: 6 }}>
-              <select className="form-input" style={{ maxWidth: 300 }} value={ticket.foremanId || ''} disabled={isReadOnly}
-                onChange={e => {
-                  const m = (job.members || []).find(x => x.id === e.target.value);
-                  setField('foremanId', e.target.value);
-                  setField('foremanName', m ? m.name : '');
-                }}>
-                <option value="">— Select foreman —</option>
-                {(job.members || []).filter(m => m.role === 'foreman').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-            </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 6 }}>Foreman / Contractor Representative</div>
+            <select className="form-input" style={{ maxWidth: 300 }} value={ticket.foremanId || ''} disabled={isReadOnly}
+              onChange={e => {
+                const m = (job.members || []).find(x => x.id === e.target.value);
+                setField('foremanId', e.target.value);
+                setField('foremanName', m ? m.name : '');
+              }}>
+              <option value="">— Select foreman —</option>
+              {(job.members || []).filter(m => m.role === 'foreman').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
           </div>
-          <span className={`badge ${['signed', 'approved'].includes(ticket.status) ? 'badge-success' : 'badge-warning'}`}>
-            {['signed', 'approved'].includes(ticket.status) ? 'Signed' : 'Signs first'}
-          </span>
+          <div style={{ fontSize: 11, color: '#888' }}>
+            {ticket.foremanSignedAt
+              ? <><div style={{ fontWeight: 600, color: '#2A6008' }}>Signed</div><div>{ticket.foremanSignedAt}</div></>
+              : <div style={{ color: '#bbb', fontStyle: 'italic' }}>Not yet signed</div>}
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <span className={`badge ${['signed', 'approved'].includes(ticket.status) ? 'badge-success' : 'badge-warning'}`}>
+              {['signed', 'approved'].includes(ticket.status) ? 'Signed' : 'Signs first'}
+            </span>
+          </div>
         </div>
-        <div className="sig-block">
+
+        {/* SUPERINTENDENT ROW */}
+        <div style={{ display: 'grid', gridTemplateColumns: '34px 1fr 140px 130px', alignItems: 'center', gap: 12, padding: '12px 0' }}>
           <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#EBF3FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#185FA5', flexShrink: 0 }}>
             {ticket.superName ? ticket.superName.split(' ').map(w => w[0]).join('').substr(0, 2).toUpperCase() : '?'}
           </div>
-          <div className="sig-info">
-            <div className="sig-name">GC Superintendent</div>
-            <div style={{ marginTop: 6 }}>
-              <select className="form-input" style={{ maxWidth: 300 }} value={ticket.superId || ''} disabled={isReadOnly}
-                onChange={e => {
-                  const s = (job.members || []).find(x => x.id === e.target.value);
-                  setField('superId', e.target.value);
-                  setField('superName', s ? s.name : '');
-                }}>
-                <option value="">— Select superintendent —</option>
-                {(job.members || []).filter(m => m.role === 'super').map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 6 }}>GC Superintendent</div>
+            <select className="form-input" style={{ maxWidth: 300 }} value={ticket.superId || ''} disabled={isReadOnly}
+              onChange={e => {
+                const s = (job.members || []).find(x => x.id === e.target.value);
+                setField('superId', e.target.value);
+                setField('superName', s ? s.name : '');
+              }}>
+              <option value="">— Select superintendent —</option>
+              {(job.members || []).filter(m => m.role === 'super').map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
           </div>
-          <span className="badge badge-gray">After foreman</span>
+          <div style={{ fontSize: 11, color: '#888' }}>
+            {ticket.superSignedAt
+              ? <><div style={{ fontWeight: 600, color: '#2A6008' }}>Signed</div><div>{ticket.superSignedAt}</div></>
+              : <div style={{ color: '#bbb', fontStyle: 'italic' }}>Not yet signed</div>}
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <span className="badge badge-gray">After foreman</span>
+          </div>
         </div>
 
         {!isReadOnly && (

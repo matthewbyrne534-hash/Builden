@@ -310,18 +310,20 @@ export default function PackagePreview({ jobId, pkgId, navigate }) {
 
           {/* SIGNATURES */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
-            <div style={s.sigBox}>
-              <p style={{ marginBottom: 8, lineHeight: 1.5 }}><strong>Contractor's Representative Certification:</strong><br />I hereby acknowledge that the above quantities and descriptions are accurate.</p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 12, gap: 20 }}>
-                <div style={s.sigLine}>{t.foremanName || ''}<br />Contractor Rep (Print Name)</div>
-                <div style={{ ...s.sigLine, maxWidth: 120 }}><br />Signature</div>
+            <div style={{ ...s.sigBox, display: 'flex', flexDirection: 'column' }}>
+              <p style={{ marginBottom: 8, lineHeight: 1.5, minHeight: 44 }}><strong>Contractor's Representative Certification:</strong><br />I hereby acknowledge that the above quantities and descriptions are accurate.</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 'auto', gap: 12 }}>
+                <div style={{ ...s.sigLine, flex: 2 }}>{t.foremanName || ''}<br />Print Name</div>
+                <div style={{ ...s.sigLine, flex: 2 }}><br />Signature</div>
+                <div style={{ ...s.sigLine, flex: 1, maxWidth: 70 }}>{t.foremanSignedAt ? t.foremanSignedAt.split(',')[0] : ''}<br />Date</div>
               </div>
             </div>
-            <div style={s.sigBox}>
-              <p style={{ marginBottom: 8, lineHeight: 1.5 }}><strong>Owner's / GC Representative Certification:</strong><br />We have verified that the above quantities are accurate.</p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 12, gap: 20 }}>
-                <div style={s.sigLine}>{t.superName || ''}<br />Owner's Rep (Print Name)</div>
-                <div style={{ ...s.sigLine, maxWidth: 120 }}><br />Signature</div>
+            <div style={{ ...s.sigBox, display: 'flex', flexDirection: 'column' }}>
+              <p style={{ marginBottom: 8, lineHeight: 1.5, minHeight: 44 }}><strong>Owner's / GC Representative Certification:</strong><br />We have verified that the above quantities are accurate.</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 'auto', gap: 12 }}>
+                <div style={{ ...s.sigLine, flex: 2 }}>{t.superName || ''}<br />Print Name</div>
+                <div style={{ ...s.sigLine, flex: 2 }}><br />Signature</div>
+                <div style={{ ...s.sigLine, flex: 1, maxWidth: 70 }}>{t.superSignedAt ? t.superSignedAt.split(',')[0] : ''}<br />Date</div>
               </div>
             </div>
           </div>

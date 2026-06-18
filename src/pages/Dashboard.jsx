@@ -126,7 +126,7 @@ export default function Dashboard({ navigate }) {
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     onClick={() => openJob(j.id)}>
                     <td style={{ padding: '10px 12px', fontWeight: 700, color: '#185FA5', whiteSpace: 'nowrap' }}>{j.name}</td>
-                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12, color: '#666' }}>{j.num}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 700, color: '#185FA5' }}>{j.num}</td>
                     <td style={{ padding: '10px 12px', color: '#555', whiteSpace: 'nowrap' }}>{j.address}</td>
                     <td style={{ padding: '10px 12px', color: '#555' }}>{j.city}</td>
                     <td style={{ padding: '10px 12px', color: '#555' }}>{j.state}</td>

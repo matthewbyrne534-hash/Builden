@@ -27,7 +27,7 @@ export function calcTicketTotals(ticket) {
 
   let matBase = 0;
   (ticket.materials || []).forEach(r => {
-    matBase += (r.qty || 0) * (r.rate || 0);
+    matBase += (r.qty || 0) * (r.unitPrice || r.rate || 0);
   });
 
   let vendorBase = 0;

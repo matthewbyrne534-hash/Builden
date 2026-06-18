@@ -229,8 +229,8 @@ const UNIT_GROUPS = [
   { label: 'Time', units: ['days', 'hours', 'months', 'weeks', 'years'] },
   { label: 'Amount', units: ['ea', 'ls'] },
   { label: 'Length', units: ['lf', 'm', 'mm'] },
-  { label: 'Area', units: ['sf', 'sy', 's^2'] },
-  { label: 'Volume', units: ['cy', 'm^3'] },
+  { label: 'Area', units: ['sf', 'sy', 's\u00B2'] },
+  { label: 'Volume', units: ['cy', 'm\u00B3'] },
   { label: 'Mass', units: ['kg', 'lbs', 'ton'] }
 ];
 

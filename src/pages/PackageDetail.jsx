@@ -197,7 +197,7 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Labor Summary</div>
             <div className="tbl-wrap">
               <table className="tbl">
-                <thead><tr><th>Classification</th><th>Reg hrs</th><th>OT hrs</th><th>DT hrs</th><th>Reg rate</th><th>OT rate</th><th>DT rate</th><th>Subtotal</th></tr></thead>
+                <thead><tr><th>Classification</th><th>Reg hrs</th><th>OT hrs</th><th>DT hrs</th><th>Reg rate</th><th>OT rate</th><th>DT rate</th><th style={{ width: 100 }}>Subtotal</th></tr></thead>
                 <tbody>
                   {Object.values(laborByClass).map((c, i) => {
                     const sub = c.reg * c.regRate + c.ot * c.otRate + c.dt * c.dtRate;
@@ -206,13 +206,13 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
                         <td style={{ fontWeight: 600 }}>{c.name}</td>
                         <td>{c.reg}</td><td>{c.ot}</td><td>{c.dt}</td>
                         <td>{fmt(c.regRate)}</td><td>{fmt(c.otRate)}</td><td>{fmt(c.dtRate)}</td>
-                        <td style={{ fontWeight: 600 }}>{fmt(sub)}</td>
+                        <td style={{ fontWeight: 600, width: 100 }}>{fmt(sub)}</td>
                       </tr>
                     );
                   })}
                   <tr style={{ background: '#f8f8f6' }}>
                     <td colSpan={7} style={{ fontWeight: 700, textAlign: 'right', fontSize: 12 }}>Labor subtotal</td>
-                    <td style={{ fontWeight: 700 }}>{fmt(Object.values(laborByClass).reduce((s, c) => s + c.reg * c.regRate + c.ot * c.otRate + c.dt * c.dtRate, 0))}</td>
+                    <td style={{ fontWeight: 700, width: 100 }}>{fmt(Object.values(laborByClass).reduce((s, c) => s + c.reg * c.regRate + c.ot * c.otRate + c.dt * c.dtRate, 0))}</td>
                   </tr>
                 </tbody>
               </table>
@@ -225,20 +225,20 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Material Summary</div>
             <div className="tbl-wrap">
               <table className="tbl">
-                <thead><tr><th>Description</th><th>Unit</th><th>Qty</th><th>Unit price</th><th>Subtotal</th></tr></thead>
+                <thead><tr><th>Description</th><th>Unit</th><th>Qty</th><th>Unit price</th><th style={{ width: 100 }}>Subtotal</th></tr></thead>
                 <tbody>
                   {Object.values(matSummary).map((m, i) => {
                     const sub = m.qty * m.unitPrice;
                     return (
                       <tr key={i}>
                         <td>{m.desc}</td><td>{m.unit}</td><td>{m.qty}</td>
-                        <td>{fmt(m.unitPrice)}</td><td style={{ fontWeight: 600 }}>{fmt(sub)}</td>
+                        <td>{fmt(m.unitPrice)}</td><td style={{ fontWeight: 600, width: 100 }}>{fmt(sub)}</td>
                       </tr>
                     );
                   })}
                   <tr style={{ background: '#f8f8f6' }}>
                     <td colSpan={4} style={{ fontWeight: 700, textAlign: 'right', fontSize: 12 }}>Material subtotal</td>
-                    <td style={{ fontWeight: 700 }}>{fmt(Object.values(matSummary).reduce((s, m) => s + m.qty * m.unitPrice, 0))}</td>
+                    <td style={{ fontWeight: 700, width: 100 }}>{fmt(Object.values(matSummary).reduce((s, m) => s + m.qty * m.unitPrice, 0))}</td>
                   </tr>
                 </tbody>
               </table>

@@ -1,47 +1,44 @@
 // src/pages/JobDetail.jsx
 import React, { useState } from 'react';
 import { useStore } from '../data/store';
-import { genId, fmt, calcPackageTotals, pkgStatusInfo, buildPkgNum, AUTH_TYPES, initials } from '../utils/helpers';
-import { Breadcrumb, Badge, Modal, FormGroup, Input, Select, EmptyState, ConfirmModal, Tabs, SearchBar } from '../components/UI';
+import { genId, fmt, calcPackageTotals, pkgStatusInfo, buildPkgNum, AUTH_TYPES, initials, getJobRoster, PERMISSION_LEVELS } from '../utils/helpers';
+import { Breadcrumb, Badge, Modal, FormGroup, Input, Select, EmptyState, ConfirmModal, SearchBar } from '../components/UI';
 
 export default function JobDetail({ jobId, navigate, initialView }) {
   const { state, dispatch } = useStore();
   const job = state.jobs.find(j => j.id === jobId);
   const view = initialView || null;
 
-  // Package state
   const [pkgFilter, setPkgFilter] = useState('all');
   const [showNewPkg, setShowNewPkg] = useState(false);
   const [editPkg, setEditPkg] = useState(null);
   const [confirmDeletePkg, setConfirmDeletePkg] = useState(null);
   const [pkgForm, setPkgForm] = useState({ title: '', authType: 'Change Event', authRef: '', authFileName: null, numSystem: 'TM-{seq}', customNum: '' });
 
-  // Directory state
   const [showAddUser, setShowAddUser] = useState(false);
-  const [addUserRole, setAddUserRole] = useState('super'); // 'pm', 'foreman', 'super'
-  const [userTab, setUserTab] = useState('dir');
+  const [addUserRole, setAddUserRole] = useState('super');
   const [userSearch, setUserSearch] = useState('');
-  const [selectedDirContact, setSelectedDirContact] = useState(null);
-  const [newUserForm, setNewUserForm] = useState({ first: '', last: '', email: '', phone: '', title: '' });
-  const [showInlineCompany, setShowInlineCompany] = useState(false);
-  const [inlineCompanyId, setInlineCompanyId] = useState('');
-  const [inlineCompanyForm, setInlineCompanyForm] = useState({ name: '', phone: '', email: '', address: '' });
+  const [selectedSourceId, setSelectedSourceId] = useState(null);
+  const [selectedPermission, setSelectedPermission] = useState('full');
   const [confirmRemoveUser, setConfirmRemoveUser] = useState(null);
+
+  const [rosterSearch, setRosterSearch] = useState('');
+  const [confirmRemoveRoster, setConfirmRemoveRoster] = useState(null);
 
   if (!job) return <div className="card"><p style={{ color: '#999' }}>Job not found.</p></div>;
 
-  const openPkgs = job.packages.filter(p => p.tickets.some(t => ['draft', 'pending-sig'].includes(t.status)));
-  const pendingPkgs = job.packages.filter(p => p.tickets.some(t => t.status === 'submitted'));
-  const executedPkgs = job.packages.filter(p => p.tickets.length > 0 && p.tickets.every(t => ['signed', 'approved'].includes(t.status)));
+  const openPkgs = job.packages.filter(p => p.tickets.some(t => ['draft', 'awaiting-foreman-sig', 'awaiting-super-sig'].includes(t.status)));
+  const pendingPkgs = job.packages.filter(p => (p.pkgStatus || 'open') === 'pending');
+  const executedPkgs = job.packages.filter(p => (p.pkgStatus || 'open') === 'executed');
   const executed = job.packages.reduce((s, p) => s + calcPackageTotals(p).executed, 0);
 
-  // Job directory members by role
   const jobMembers = job.members || [];
   const pms = jobMembers.filter(m => m.role === 'pm');
   const foremen = jobMembers.filter(m => m.role === 'foreman');
   const supers = jobMembers.filter(m => m.role === 'super');
 
-  // ── Package functions ──
+  const jobRoster = getJobRoster(job, state.personnelRoster);
+
   function openNewPkg() { setPkgForm({ title: '', authType: 'Change Event', authRef: '', authFileName: null, numSystem: 'TM-{seq}', customNum: '' }); setEditPkg(null); setShowNewPkg(true); }
   function openEditPkg(pkg) { setPkgForm({ title: pkg.title, authType: pkg.authType, authRef: pkg.authRef || '', authFileName: pkg.authFileName, numSystem: pkg.numSystem || 'TM-{seq}', customNum: '' }); setEditPkg(pkg); setShowNewPkg(true); }
   function savePkg() {
@@ -53,7 +50,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
     } else {
       const seq = job.packages.length + 1;
       const num = buildPkgNum(numSys, seq);
-      const pkg = { id: genId(), num, numSystem: numSys, title: pkgForm.title, authType: pkgForm.authType, authRef: pkgForm.authRef, authFileName: pkgForm.authFileName, prepSettings: null, tickets: [] };
+      const pkg = { id: genId(), num, numSystem: numSys, title: pkgForm.title, authType: pkgForm.authType, authRef: pkgForm.authRef, authFileName: pkgForm.authFileName, prepSettings: null, pkgStatus: 'open', tickets: [] };
       dispatch({ type: 'ADD_PKG', jobId: job.id, pkg });
       setShowNewPkg(false);
       navigate('package-detail', { jobId: job.id, pkgId: pkg.id });
@@ -64,73 +61,61 @@ export default function JobDetail({ jobId, navigate, initialView }) {
     setConfirmDeletePkg(pkg);
   }
 
-  // ── Directory functions ──
   function openAddUserModal(role) {
     setAddUserRole(role);
-    setUserTab('dir');
     setUserSearch('');
-    setSelectedDirContact(null);
-    setNewUserForm({ first: '', last: '', email: '', phone: '', title: role === 'super' ? 'Superintendent' : role === 'foreman' ? 'Foreman' : 'Project Manager' });
-    setShowInlineCompany(false);
-    setInlineCompanyId('');
-    setInlineCompanyForm({ name: '', phone: '', email: '', address: '' });
+    setSelectedSourceId(null);
+    setSelectedPermission(role === 'pm' ? 'full' : 'standard');
     setShowAddUser(true);
   }
 
-  function handleCompanySelect(val) {
-    if (val === 'not-listed') { setShowInlineCompany(true); setInlineCompanyId(''); }
-    else { setShowInlineCompany(false); setInlineCompanyId(val); }
-  }
-
   function saveUser() {
-    if (userTab === 'dir') {
-      if (!selectedDirContact) return alert('Please select a contact from the directory.');
-      const c = state.directory.contacts.find(x => x.id === selectedDirContact);
-      if (!c) return;
-      const member = { id: genId(), contactId: c.id, name: c.first + ' ' + c.last, email: c.email, phone: c.phone, role: addUserRole, inviteSent: false, inviteStatus: 'not-sent' };
+    if (!selectedSourceId) return alert(`Please select a ${addUserRole === 'super' ? 'superintendent' : 'team member'}.`);
+    if (addUserRole === 'super') {
+      const s = state.gcSupers.find(x => x.id === selectedSourceId);
+      if (!s) return;
+      const member = { id: genId(), sourceType: 'gc', sourceId: s.id, name: s.first + ' ' + s.last, email: s.email, phone: s.phone, role: 'super' };
       dispatch({ type: 'ADD_JOB_MEMBER', jobId: job.id, member });
     } else {
-      if (!newUserForm.first || !newUserForm.last || !newUserForm.email) return alert('First name, last name, and email are required.');
-      // Create company if needed
-      let companyId = inlineCompanyId;
-      if (showInlineCompany && inlineCompanyForm.name) {
-        const newCo = { id: genId(), ...inlineCompanyForm };
-        dispatch({ type: 'ADD_COMPANY', company: newCo });
-        companyId = newCo.id;
-      }
-      // Add to platform directory
-      const newContact = { id: genId(), companyId, first: newUserForm.first, last: newUserForm.last, title: newUserForm.title, phone: newUserForm.phone, email: newUserForm.email };
-      dispatch({ type: 'ADD_CONTACT', contact: newContact });
-      // Add to job
-      const member = { id: genId(), contactId: newContact.id, name: newUserForm.first + ' ' + newUserForm.last, email: newUserForm.email, phone: newUserForm.phone, role: addUserRole, inviteSent: false, inviteStatus: 'not-sent' };
+      const it = state.internalTeam.find(x => x.id === selectedSourceId);
+      if (!it) return;
+      const member = { id: genId(), sourceType: 'internal', sourceId: it.id, name: it.first + ' ' + it.last, email: it.email, phone: it.phone, role: addUserRole, permission: selectedPermission, inviteSent: false, inviteStatus: it.inviteStatus || 'not-sent' };
       dispatch({ type: 'ADD_JOB_MEMBER', jobId: job.id, member });
     }
     setShowAddUser(false);
-
   }
 
   function removeUser(member) { setConfirmRemoveUser(member); }
 
-  const filteredDirContacts = state.directory.contacts.filter(c =>
-    (c.first + ' ' + c.last + ' ' + c.email).toLowerCase().includes(userSearch.toLowerCase())
-  );
+  function sendInvite(member) {
+    dispatch({ type: 'UPDATE_JOB_MEMBER', jobId: job.id, memberId: member.id, data: { inviteSent: true, inviteStatus: 'invited' } });
+    alert(`Invite will be sent to ${member.email} once email authentication is enabled in Phase 3.`);
+  }
 
-  const roleLabel = { pm: 'Sub Project Manager', foreman: 'Foreman', super: 'GC Superintendent' };
+  function updatePermission(member, level) {
+    dispatch({ type: 'UPDATE_JOB_MEMBER', jobId: job.id, memberId: member.id, data: { permission: level } });
+  }
 
-  // ── Member row component ──
+  const alreadyOnJobIds = new Set(jobMembers.filter(m => m.sourceType === 'internal').map(m => m.sourceId));
+  const alreadySuperIds = new Set(jobMembers.filter(m => m.sourceType === 'gc').map(m => m.sourceId));
+
+  const availableInternal = state.internalTeam.filter(it => it.role === addUserRole && !alreadyOnJobIds.has(it.id) &&
+    (it.first + ' ' + it.last).toLowerCase().includes(userSearch.toLowerCase()));
+  const availableSupers = state.gcSupers.filter(s => !alreadySuperIds.has(s.id) &&
+    (s.first + ' ' + s.last).toLowerCase().includes(userSearch.toLowerCase()));
+
+  const roleLabel = { pm: 'Sub Project Manager', foreman: 'Sub Foreman', super: 'GC Superintendent' };
+
+  function removeFromJobRoster(worker) { setConfirmRemoveRoster(worker); }
+  const filteredJobRoster = jobRoster.filter(w => (w.first + ' ' + w.last).toLowerCase().includes(rosterSearch.toLowerCase()));
+
   function MemberRow({ member }) {
-    const co = state.directory.contacts.find(c => c.id === member.contactId);
-    const company = co ? state.directory.companies.find(x => x.id === co.companyId) : null;
     const statusMap = {
       'not-sent': { label: 'Not invited', cls: 'badge-gray' },
       'invited': { label: 'Invite sent', cls: 'badge-info' },
       'active': { label: 'Active', cls: 'badge-success' }
     };
     const status = statusMap[member.inviteStatus || 'not-sent'];
-    function sendInvite() {
-      dispatch({ type: 'UPDATE_JOB_MEMBER', jobId: job.id, memberId: member.id, data: { inviteSent: true, inviteStatus: 'invited' } });
-      alert(`Invite will be sent to ${member.email} once email authentication is enabled in Phase 3.`);
-    }
     return (
       <tr>
         <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -139,7 +124,13 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         </div></td>
         <td>{member.email}</td>
         <td>{member.phone}</td>
-        <td>{company?.name || '—'}</td>
+        <td>
+          {member.role !== 'super' ? (
+            <select className="form-input" style={{ fontSize: 12 }} value={member.permission || 'standard'} onChange={e => updatePermission(member, e.target.value)}>
+              {PERMISSION_LEVELS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+            </select>
+          ) : <span style={{ color: '#aaa', fontSize: 12 }}>N/A</span>}
+        </td>
         <td>
           {member.role !== 'super'
             ? <span className={`badge ${status.cls}`}>{status.label}</span>
@@ -149,7 +140,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         <td>
           <div style={{ display: 'flex', gap: 4 }}>
             {member.role !== 'super' && member.inviteStatus !== 'active' && (
-              <button className="btn btn-sm" onClick={sendInvite} title="Send invite">
+              <button className="btn btn-sm" onClick={() => sendInvite(member)} title="Send invite">
                 <i className="ti ti-mail" /> {member.inviteStatus === 'invited' ? 'Resend' : 'Invite'}
               </button>
             )}
@@ -167,7 +158,6 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         { label: job.num + ' - ' + job.name }
       ]} />
 
-      {/* THREE SUMMARY BOXES */}
       <div className="stats-row" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <div className="stat-item">
           <div className="stat-label">Open / In Progress</div>
@@ -186,7 +176,6 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         </div>
       </div>
 
-      {/* NO VIEW SELECTED */}
       {!view && (
         <div className="card" style={{ textAlign: 'center', padding: '32px 20px', color: '#aaa' }}>
           <i className="ti ti-arrow-up" style={{ fontSize: 24, display: 'block', marginBottom: 8 }} />
@@ -194,7 +183,6 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         </div>
       )}
 
-      {/* T&M PACKAGES VIEW */}
       {view === 'packages' && (
         <div className="card">
           <div className="card-header">
@@ -242,64 +230,102 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         </div>
       )}
 
-      {/* JOB DIRECTORY VIEW */}
       {view === 'directory' && (
         <div>
-          {/* Sub Project Managers */}
           <div className="card">
             <div className="card-header">
               <div className="card-header-left">
                 <div className="card-title">Sub Project Managers</div>
-                <div className="card-subtitle">Internal PMs assigned to this job</div>
+                <div className="card-subtitle">From your Internal Team — set permission level per job</div>
               </div>
               <button className="btn btn-primary btn-sm" onClick={() => openAddUserModal('pm')}><i className="ti ti-plus" /> Add PM</button>
             </div>
             {pms.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0', fontStyle: 'italic' }}>No PMs added yet.</p> : (
-              <table className="dir-table">
-                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th>Status</th><th style={{ width: 50 }}></th></tr></thead>
+              <table className="dir-table" style={{ tableLayout: 'fixed', width: '100%' }}>
+                <colgroup>
+                  <col style={{ width: '20%' }} /><col style={{ width: '26%' }} /><col style={{ width: '14%' }} />
+                  <col style={{ width: '18%' }} /><col style={{ width: '14%' }} /><col style={{ width: '8%' }} />
+                </colgroup>
+                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Permission</th><th>Status</th><th></th></tr></thead>
                 <tbody>{pms.map(m => <MemberRow key={m.id} member={m} />)}</tbody>
               </table>
             )}
           </div>
 
-          {/* Foremen */}
           <div className="card">
             <div className="card-header">
               <div className="card-header-left">
                 <div className="card-title">Sub Foremen</div>
-                <div className="card-subtitle">Field foremen assigned to this job</div>
+                <div className="card-subtitle">From your Internal Team — set permission level per job</div>
               </div>
               <button className="btn btn-primary btn-sm" onClick={() => openAddUserModal('foreman')}><i className="ti ti-plus" /> Add foreman</button>
             </div>
             {foremen.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0', fontStyle: 'italic' }}>No foremen added yet.</p> : (
-              <table className="dir-table">
-                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th>Status</th><th style={{ width: 50 }}></th></tr></thead>
+              <table className="dir-table" style={{ tableLayout: 'fixed', width: '100%' }}>
+                <colgroup>
+                  <col style={{ width: '20%' }} /><col style={{ width: '26%' }} /><col style={{ width: '14%' }} />
+                  <col style={{ width: '18%' }} /><col style={{ width: '14%' }} /><col style={{ width: '8%' }} />
+                </colgroup>
+                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Permission</th><th>Status</th><th></th></tr></thead>
                 <tbody>{foremen.map(m => <MemberRow key={m.id} member={m} />)}</tbody>
               </table>
             )}
           </div>
 
-          {/* GC Superintendents */}
           <div className="card">
             <div className="card-header">
               <div className="card-header-left">
                 <div className="card-title">GC Superintendents</div>
-                <div className="card-subtitle">Sign T&M tickets via DocuSign — no Builden login required</div>
+                <div className="card-subtitle">From your GC Directory — sign T&M tickets via DocuSign, no login required</div>
               </div>
               <button className="btn btn-primary btn-sm" onClick={() => openAddUserModal('super')}><i className="ti ti-plus" /> Add superintendent</button>
             </div>
             {supers.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0', fontStyle: 'italic' }}>No superintendents added yet.</p> : (
-              <table className="dir-table">
-                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th></th><th style={{ width: 50 }}></th></tr></thead>
+              <table className="dir-table" style={{ tableLayout: 'fixed', width: '100%' }}>
+                <colgroup>
+                  <col style={{ width: '20%' }} /><col style={{ width: '26%' }} /><col style={{ width: '14%' }} />
+                  <col style={{ width: '18%' }} /><col style={{ width: '14%' }} /><col style={{ width: '8%' }} />
+                </colgroup>
+                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Permission</th><th>Status</th><th></th></tr></thead>
                 <tbody>{supers.map(m => <MemberRow key={m.id} member={m} />)}</tbody>
               </table>
             )}
           </div>
 
-          {/* Project contacts */}
+          <div className="card">
+            <div className="card-header">
+              <div className="card-header-left">
+                <div className="card-title">Personnel Roster (this job)</div>
+                <div className="card-subtitle">Inherited automatically from the company-wide roster. Remove someone from just this job below — to add or edit roster members, go to the company Directory.</div>
+              </div>
+              <button className="btn btn-sm" onClick={() => navigate('directory')}><i className="ti ti-external-link" /> Manage company roster</button>
+            </div>
+            <SearchBar value={rosterSearch} onChange={setRosterSearch} placeholder="Search this job's roster..." />
+            {filteredJobRoster.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0', fontStyle: 'italic' }}>No personnel on this job's roster.</p> : (
+              filteredJobRoster.map(w => {
+                const cls = state.classifications.find(c => c.id === w.classId);
+                return (
+                  <div key={w.id} className="list-row">
+                    <div className="row-icon">{initials(w.first + ' ' + w.last)}</div>
+                    <div className="row-body">
+                      <div className="row-title">{w.first} {w.last}</div>
+                      <div className="row-sub">{cls?.name || 'No classification'}</div>
+                    </div>
+                    <div className="row-actions">
+                      <button className="btn btn-sm btn-danger" onClick={() => removeFromJobRoster(w)}>Remove from job</button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
           <div className="card">
             <div className="card-header"><div className="card-title">Project contacts</div></div>
-            <table className="dir-table">
+            <table className="dir-table" style={{ tableLayout: 'fixed', width: '100%' }}>
+              <colgroup>
+                <col style={{ width: '20%' }} /><col style={{ width: '80%' }} />
+              </colgroup>
               <thead><tr><th>Role</th><th>Company</th></tr></thead>
               <tbody>
                 <tr><td style={{ fontWeight: 600 }}>General Contractor</td><td>{job.gc || '—'}</td></tr>
@@ -311,74 +337,62 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         </div>
       )}
 
-      {/* ADD USER MODAL */}
-      <Modal open={showAddUser} onClose={() => setShowAddUser(false)} title={`Add ${roleLabel[addUserRole]}`} wide
+      <Modal open={showAddUser} onClose={() => setShowAddUser(false)} title={`Add ${roleLabel[addUserRole]}`}
         footer={<>
           <button className="btn" onClick={() => setShowAddUser(false)}>Cancel</button>
-          <button className="btn btn-primary" onClick={saveUser}>
-            <i className="ti ti-check" /> Add to job
-          </button>
+          <button className="btn btn-primary" onClick={saveUser}><i className="ti ti-check" /> Add to job</button>
         </>}>
 
+        <SearchBar value={userSearch} onChange={setUserSearch} placeholder={addUserRole === 'super' ? 'Search GC superintendents...' : 'Search internal team...'} />
 
-
-        <Tabs tabs={[{ id: 'dir', label: 'From directory' }, { id: 'new', label: 'Add new' }]} active={userTab} onChange={t => { setUserTab(t); setSelectedDirContact(null); setShowInlineCompany(false); }} />
-
-        {userTab === 'dir' ? (
-          <>
-            <SearchBar value={userSearch} onChange={setUserSearch} placeholder="Search by name or email..." />
-            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-              {filteredDirContacts.length === 0
-                ? <p style={{ color: '#aaa', fontSize: 13, padding: 12 }}>No contacts found. Switch to "Add new" to add someone.</p>
-                : filteredDirContacts.map(c => {
-                  const co = state.directory.companies.find(x => x.id === c.companyId);
-                  const selected = selectedDirContact === c.id;
-                  return (
-                    <div key={c.id} className="list-row clickable" onClick={() => setSelectedDirContact(c.id)}
-                      style={{ background: selected ? '#EBF3FB' : 'transparent', borderRadius: 8, padding: '10px 8px' }}>
-                      <div className="row-icon">{initials(c.first + ' ' + c.last)}</div>
-                      <div className="row-body">
-                        <div className="row-title">{c.first} {c.last} {selected && <i className="ti ti-check" style={{ color: '#185FA5', marginLeft: 4 }} />}</div>
-                        <div className="row-sub">{c.title}{co ? ' · ' + co.name : ''} · {c.email}</div>
-                      </div>
+        <div style={{ maxHeight: 280, overflowY: 'auto', marginBottom: addUserRole !== 'super' ? 16 : 0 }}>
+          {addUserRole === 'super' ? (
+            availableSupers.length === 0
+              ? <p style={{ color: '#aaa', fontSize: 13, padding: 12 }}>No available superintendents. Add one in the GC Directory first.</p>
+              : availableSupers.map(s => {
+                const co = state.gcCompanies.find(c => c.id === s.gcCompanyId);
+                const selected = selectedSourceId === s.id;
+                return (
+                  <div key={s.id} className="list-row clickable" onClick={() => setSelectedSourceId(s.id)}
+                    style={{ background: selected ? '#EBF3FB' : 'transparent', borderRadius: 8, padding: '10px 8px' }}>
+                    <div className="row-icon">{initials(s.first + ' ' + s.last)}</div>
+                    <div className="row-body">
+                      <div className="row-title">{s.first} {s.last} {selected && <i className="ti ti-check" style={{ color: '#185FA5', marginLeft: 4 }} />}</div>
+                      <div className="row-sub">{co?.name || ''} · {s.email}</div>
                     </div>
-                  );
-                })
-              }
+                  </div>
+                );
+              })
+          ) : (
+            availableInternal.length === 0
+              ? <p style={{ color: '#aaa', fontSize: 13, padding: 12 }}>No available {roleLabel[addUserRole].toLowerCase()}s. Add one in the Internal Team directory first, or everyone available is already on this job.</p>
+              : availableInternal.map(it => {
+                const selected = selectedSourceId === it.id;
+                return (
+                  <div key={it.id} className="list-row clickable" onClick={() => setSelectedSourceId(it.id)}
+                    style={{ background: selected ? '#EBF3FB' : 'transparent', borderRadius: 8, padding: '10px 8px' }}>
+                    <div className="row-icon">{initials(it.first + ' ' + it.last)}</div>
+                    <div className="row-body">
+                      <div className="row-title">{it.first} {it.last} {selected && <i className="ti ti-check" style={{ color: '#185FA5', marginLeft: 4 }} />}</div>
+                      <div className="row-sub">{it.email}</div>
+                    </div>
+                  </div>
+                );
+              })
+          )}
+        </div>
+
+        {addUserRole !== 'super' && (
+          <FormGroup label="Permission level for this job">
+            <Select value={selectedPermission} onChange={setSelectedPermission}
+              options={PERMISSION_LEVELS.map(p => ({ value: p.value, label: p.label }))} />
+            <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
+              {PERMISSION_LEVELS.find(p => p.value === selectedPermission)?.description}
             </div>
-          </>
-        ) : (
-          <>
-            <div className="form-grid form-grid-2">
-              <FormGroup label="First name *"><Input value={newUserForm.first} onChange={v => setNewUserForm(f => ({ ...f, first: v }))} placeholder="First" /></FormGroup>
-              <FormGroup label="Last name *"><Input value={newUserForm.last} onChange={v => setNewUserForm(f => ({ ...f, last: v }))} placeholder="Last" /></FormGroup>
-              <FormGroup label="Title"><Input value={newUserForm.title} onChange={v => setNewUserForm(f => ({ ...f, title: v }))} /></FormGroup>
-              <FormGroup label="Phone"><Input value={newUserForm.phone} onChange={v => setNewUserForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
-              <FormGroup label="Email *" span="2"><Input value={newUserForm.email} onChange={v => setNewUserForm(f => ({ ...f, email: v }))} placeholder="name@company.com" /></FormGroup>
-            </div>
-            <FormGroup label="Company">
-              <select className="form-input" value={showInlineCompany ? 'not-listed' : inlineCompanyId} onChange={e => handleCompanySelect(e.target.value)}>
-                <option value="">— Select company —</option>
-                {state.directory.companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                <option value="not-listed">+ Company not listed — add new</option>
-              </select>
-            </FormGroup>
-            {showInlineCompany && (
-              <div style={{ marginTop: 12, padding: '14px 16px', background: '#f8fbff', border: '1px solid #C5DEFA', borderRadius: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#185FA5', marginBottom: 12 }}><i className="ti ti-building" /> New company details</div>
-                <div className="form-grid form-grid-2">
-                  <FormGroup label="Company name *" span="2"><Input value={inlineCompanyForm.name} onChange={v => setInlineCompanyForm(f => ({ ...f, name: v }))} placeholder="e.g. Apex Construction Group" /></FormGroup>
-                  <FormGroup label="Phone"><Input value={inlineCompanyForm.phone} onChange={v => setInlineCompanyForm(f => ({ ...f, phone: v }))} /></FormGroup>
-                  <FormGroup label="Email"><Input value={inlineCompanyForm.email} onChange={v => setInlineCompanyForm(f => ({ ...f, email: v }))} /></FormGroup>
-                  <FormGroup label="Address" span="2"><Input value={inlineCompanyForm.address} onChange={v => setInlineCompanyForm(f => ({ ...f, address: v }))} placeholder="Street, City, State ZIP" /></FormGroup>
-                </div>
-              </div>
-            )}
-          </>
+          </FormGroup>
         )}
       </Modal>
 
-      {/* PACKAGE MODAL */}
       <Modal open={showNewPkg} onClose={() => setShowNewPkg(false)} title={editPkg ? 'Edit Package' : 'New T&M Package'}
         footer={<><button className="btn" onClick={() => setShowNewPkg(false)}>Cancel</button><button className="btn btn-primary" onClick={savePkg}><i className="ti ti-check" /> {editPkg ? 'Save changes' : 'Create package'}</button></>}>
         <div className="form-grid">
@@ -412,6 +426,10 @@ export default function JobDetail({ jobId, navigate, initialView }) {
       <ConfirmModal open={!!confirmRemoveUser} onClose={() => setConfirmRemoveUser(null)}
         onConfirm={() => { dispatch({ type: 'REMOVE_JOB_MEMBER', jobId: job.id, memberId: confirmRemoveUser.id }); setConfirmRemoveUser(null); }}
         title="Remove from job" message={`Remove ${confirmRemoveUser?.name} from this job?`} danger />
+
+      <ConfirmModal open={!!confirmRemoveRoster} onClose={() => setConfirmRemoveRoster(null)}
+        onConfirm={() => { dispatch({ type: 'REMOVE_ROSTER_FROM_JOB', jobId: job.id, workerId: confirmRemoveRoster.id }); setConfirmRemoveRoster(null); }}
+        title="Remove from this job" message={`Remove ${confirmRemoveRoster?.first} ${confirmRemoveRoster?.last} from this job's roster? They'll remain in the company-wide Personnel Roster and can be re-added to this job later.`} danger />
     </div>
   );
 }

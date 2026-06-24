@@ -123,30 +123,43 @@ function PersonnelRosterSection() {
   const { state, dispatch } = useStore();
   const [search, setSearch] = useState('');
 
-  const [showCls, setShowCls] = useState(false);
-  const [editCls, setEditCls] = useState(null);
-  const [clsForm, setClsForm] = useState({ name: '', regRate: '', otRate: '', dtRate: '' });
-  const [confirmRemoveCls, setConfirmRemoveCls] = useState(null);
-
   const [showWorker, setShowWorker] = useState(false);
   const [editWorker, setEditWorker] = useState(null);
   const [workerForm, setWorkerForm] = useState({ first: '', last: '', classId: '' });
+  const [addingNewCls, setAddingNewCls] = useState(false);
+  const [newClsName, setNewClsName] = useState('');
   const [confirmRemoveWorker, setConfirmRemoveWorker] = useState(null);
 
-  function openAddCls() { setClsForm({ name: '', regRate: '', otRate: '', dtRate: '' }); setEditCls(null); setShowCls(true); }
-  function openEditCls(c) { setClsForm({ name: c.name, regRate: String(c.regRate || ''), otRate: String(c.otRate || ''), dtRate: String(c.dtRate || '') }); setEditCls(c); setShowCls(true); }
-  function saveCls() {
-    if (!clsForm.name || !clsForm.regRate) return alert('Name and regular rate are required.');
-    const cls = { id: editCls?.id || genId(), name: clsForm.name, regRate: parseFloat(clsForm.regRate) || 0, otRate: parseFloat(clsForm.otRate) || 0, dtRate: parseFloat(clsForm.dtRate) || 0 };
-    dispatch({ type: editCls ? 'UPDATE_CLS' : 'ADD_CLS', cls });
-    setShowCls(false);
+  function openAddWorker() {
+    setWorkerForm({ first: '', last: '', classId: '' });
+    setAddingNewCls(state.classifications.length === 0);
+    setNewClsName('');
+    setEditWorker(null);
+    setShowWorker(true);
   }
-
-  function openAddWorker() { setWorkerForm({ first: '', last: '', classId: state.classifications[0]?.id || '' }); setEditWorker(null); setShowWorker(true); }
-  function openEditWorker(w) { setWorkerForm({ first: w.first, last: w.last, classId: w.classId }); setEditWorker(w); setShowWorker(true); }
+  function openEditWorker(w) {
+    setWorkerForm({ first: w.first, last: w.last, classId: w.classId });
+    setAddingNewCls(false);
+    setNewClsName('');
+    setEditWorker(w);
+    setShowWorker(true);
+  }
+  function handleClsSelect(val) {
+    if (val === 'not-listed') { setAddingNewCls(true); setWorkerForm(f => ({ ...f, classId: '' })); }
+    else { setAddingNewCls(false); setWorkerForm(f => ({ ...f, classId: val })); }
+  }
   function saveWorker() {
     if (!workerForm.first || !workerForm.last) return alert('First and last name are required.');
-    const worker = { id: editWorker?.id || genId(), first: workerForm.first, last: workerForm.last, classId: workerForm.classId };
+    let classId = workerForm.classId;
+    if (addingNewCls) {
+      if (!newClsName.trim()) return alert('Please enter a classification name, or select an existing one.');
+      const newCls = { id: genId(), name: newClsName.trim() };
+      dispatch({ type: 'ADD_CLS', cls: newCls });
+      classId = newCls.id;
+    } else if (!classId) {
+      return alert('Please select a classification or add a new one.');
+    }
+    const worker = { id: editWorker?.id || genId(), first: workerForm.first, last: workerForm.last, classId };
     dispatch({ type: editWorker ? 'UPDATE_WORKER' : 'ADD_WORKER', worker });
     setShowWorker(false);
   }
@@ -157,49 +170,14 @@ function PersonnelRosterSection() {
     <div>
       <div className="notice notice-info" style={{ marginBottom: 16 }}>
         <i className="ti ti-info-circle" />
-        <span>This is your company-wide crew list. It automatically carries over to every new job. PMs can remove someone from an individual job without affecting this master list — but adding or editing a worker must happen here.</span>
+        <span>This is your company-wide crew list. It automatically carries over to every new job. PMs can remove someone from an individual job without affecting this master list — but adding or editing a worker must happen here. Wage rates are set per job in Job Setup, since rates can vary job to job.</span>
       </div>
 
-      {/* CLASSIFICATIONS */}
-      <div className="card">
-        <div className="card-header">
-          <div className="card-header-left">
-            <div className="card-title">Labor Classifications &amp; Rates</div>
-            <div className="card-subtitle">Wages are tied to classification, applied by the PM during package preparation</div>
-          </div>
-          <button className="btn btn-sm" onClick={openAddCls}><i className="ti ti-plus" /> Add classification</button>
-        </div>
-        {state.classifications.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0' }}>No classifications added yet.</p> : (
-          <div className="tbl-wrap">
-            <table className="tbl">
-              <thead><tr><th>Classification</th><th>Regular rate</th><th>OT rate</th><th>DT rate</th><th style={{ width: 80 }}></th></tr></thead>
-              <tbody>
-                {state.classifications.map(c => (
-                  <tr key={c.id}>
-                    <td style={{ fontWeight: 600 }}>{c.name}</td>
-                    <td>${(c.regRate || 0).toFixed(2)}/hr</td>
-                    <td>${(c.otRate || 0).toFixed(2)}/hr</td>
-                    <td>${(c.dtRate || 0).toFixed(2)}/hr</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <button className="btn btn-icon btn-sm" onClick={() => openEditCls(c)}><i className="ti ti-edit" /></button>
-                        <button className="btn btn-icon btn-sm btn-danger" onClick={() => setConfirmRemoveCls(c)}><i className="ti ti-trash" /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* PERSONNEL */}
       <div className="card">
         <div className="card-header">
           <div className="card-header-left">
             <div className="card-title">Personnel Roster</div>
-            <div className="card-subtitle">Field crew available for ticket labor hours — no login required</div>
+            <div className="card-subtitle">Field crew available for ticket labor hours — no login required, no rates stored here</div>
           </div>
           <button className="btn btn-primary btn-sm" onClick={openAddWorker}><i className="ti ti-plus" /> Add worker</button>
         </div>
@@ -212,7 +190,7 @@ function PersonnelRosterSection() {
                 <div className="row-icon">{initials(w.first + ' ' + w.last)}</div>
                 <div className="row-body">
                   <div className="row-title">{w.first} {w.last}</div>
-                  <div className="row-sub">{cls ? cls.name + ' - $' + (cls.regRate || 0).toFixed(2) + '/hr' : 'No classification'}</div>
+                  <div className="row-sub">{cls ? cls.name : 'No classification'}</div>
                 </div>
                 <div className="row-actions">
                   <button className="btn btn-icon btn-sm" onClick={() => openEditWorker(w)}><i className="ti ti-edit" /></button>
@@ -224,32 +202,28 @@ function PersonnelRosterSection() {
         )}
       </div>
 
-      <Modal open={showCls} onClose={() => setShowCls(false)} title={editCls ? 'Edit Classification' : 'Add Classification'}
-        footer={<><button className="btn" onClick={() => setShowCls(false)}>Cancel</button><button className="btn btn-primary" onClick={saveCls}><i className="ti ti-check" /> Save</button></>}>
-        <div className="form-grid form-grid-2">
-          <FormGroup label="Classification name *" span="2"><Input value={clsForm.name} onChange={v => setClsForm(f => ({ ...f, name: v }))} placeholder="e.g. Foreman, Carpenter, Laborer, Electrician" /></FormGroup>
-          <FormGroup label="Regular rate ($/hr) *"><Input type="number" value={clsForm.regRate} onChange={v => setClsForm(f => ({ ...f, regRate: v }))} placeholder="0.00" /></FormGroup>
-          <FormGroup label="OT rate ($/hr)"><Input type="number" value={clsForm.otRate} onChange={v => setClsForm(f => ({ ...f, otRate: v }))} placeholder="0.00" /></FormGroup>
-          <FormGroup label="DT rate ($/hr)"><Input type="number" value={clsForm.dtRate} onChange={v => setClsForm(f => ({ ...f, dtRate: v }))} placeholder="0.00" /></FormGroup>
-        </div>
-      </Modal>
-
       <Modal open={showWorker} onClose={() => setShowWorker(false)} title={editWorker ? 'Edit Worker' : 'Add Worker'}
         footer={<><button className="btn" onClick={() => setShowWorker(false)}>Cancel</button><button className="btn btn-primary" onClick={saveWorker}><i className="ti ti-check" /> Save</button></>}>
         <div className="form-grid form-grid-2">
           <FormGroup label="First name *"><Input value={workerForm.first} onChange={v => setWorkerForm(f => ({ ...f, first: v }))} /></FormGroup>
           <FormGroup label="Last name *"><Input value={workerForm.last} onChange={v => setWorkerForm(f => ({ ...f, last: v }))} /></FormGroup>
-          <FormGroup label="Classification" span="2">
-            <Select value={workerForm.classId} onChange={v => setWorkerForm(f => ({ ...f, classId: v }))}
-              options={state.classifications.map(c => ({ value: c.id, label: c.name + ' - $' + (c.regRate || 0).toFixed(2) + '/hr' }))}
-              placeholder="- Select classification -" />
+          <FormGroup label="Classification *" span="2">
+            {state.classifications.length === 0 ? (
+              <Input value={newClsName} onChange={setNewClsName} placeholder="e.g. Foreman, Carpenter, Laborer, Electrician" />
+            ) : (
+              <select className="form-input" value={addingNewCls ? 'not-listed' : workerForm.classId} onChange={e => handleClsSelect(e.target.value)}>
+                <option value="">- Select classification -</option>
+                {state.classifications.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="not-listed">+ Classification not listed - add new</option>
+              </select>
+            )}
+            {addingNewCls && state.classifications.length > 0 && (
+              <Input value={newClsName} onChange={setNewClsName} placeholder="New classification name" style={{ marginTop: 8 }} />
+            )}
           </FormGroup>
         </div>
       </Modal>
 
-      <ConfirmModal open={!!confirmRemoveCls} onClose={() => setConfirmRemoveCls(null)} title="Remove classification"
-        message={`Remove "${confirmRemoveCls?.name}" from the company-wide list?`} danger
-        onConfirm={() => { dispatch({ type: 'REMOVE_CLS', clsId: confirmRemoveCls.id }); setConfirmRemoveCls(null); }} />
       <ConfirmModal open={!!confirmRemoveWorker} onClose={() => setConfirmRemoveWorker(null)} title="Remove worker"
         message={`Remove ${confirmRemoveWorker?.first} ${confirmRemoveWorker?.last} from the company-wide roster? They will no longer appear on any job's ticket dropdowns.`} danger
         onConfirm={() => { dispatch({ type: 'REMOVE_WORKER', workerId: confirmRemoveWorker.id }); setConfirmRemoveWorker(null); }} />

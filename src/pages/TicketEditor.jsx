@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useStore } from '../data/store';
-import { genId } from '../utils/helpers';
+import { genId, getJobRoster } from '../utils/helpers';
 import { Breadcrumb, Notice, FormGroup, Input } from '../components/UI';
 
 // ─── WORKER SELECT (searchable dropdown) ─────────────────────────────────────
@@ -347,6 +347,9 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
   const isReadOnly = ticket.status === 'executed' || ticket.status === 'void';
   const prevDescs = [...new Set(pkg.tickets.filter(t => t.id !== ticketId).map(t => t.desc).filter(Boolean))];
 
+  // Active personnel roster for this job: company-wide roster minus anyone removed from this job
+  const jobRoster = getJobRoster(job, state.personnelRoster);
+
   // Unique materials (desc + unit) used anywhere else in this package, for the material picker dropdown
   const existingMaterialsMap = {};
   pkg.tickets.forEach(t => {
@@ -554,8 +557,8 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
             </thead>
             <tbody>
               {ticket.labor.map((row, i) => (
-                <LaborRow key={row.id || i} row={row} index={i} workers={job.workers}
-                  classifications={job.classifications} onChange={setLabor} onRemove={removeLabor} isReadOnly={isReadOnly} />
+                <LaborRow key={row.id || i} row={row} index={i} workers={jobRoster}
+                  classifications={state.classifications} onChange={setLabor} onRemove={removeLabor} isReadOnly={isReadOnly} />
               ))}
               {ticket.labor.length === 0 && (
                 <tr><td colSpan={6} style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', padding: '12px 10px' }}>No workers added yet.</td></tr>

@@ -85,14 +85,12 @@ export function calcPackageTotals(pkg) {
 }
 
 export function pkgStatusInfo(pkg) {
-  const statuses = (pkg.tickets || []).map(t => t.status);
-  if (pkg.voided) return { label: 'Voided', cls: 'badge-red' };
-  if (statuses.length === 0) return { label: 'No tickets', cls: 'badge-gray' };
-  if (statuses.every(s => s === 'approved')) return { label: 'GC Approved', cls: 'badge-success' };
-  if (statuses.some(s => s === 'submitted')) return { label: 'Submitted to GC', cls: 'badge-info' };
-  if (statuses.every(s => s === 'signed')) return { label: 'All signed', cls: 'badge-success' };
-  if (statuses.some(s => s === 'pending-sig')) return { label: 'Awaiting signature', cls: 'badge-warning' };
-  return { label: 'In progress', cls: 'badge-gray' };
+  const map = {
+    open: { label: 'Open / In Progress', cls: 'badge-gray' },
+    pending: { label: 'Pending GC Approval', cls: 'badge-warning' },
+    executed: { label: 'Executed', cls: 'badge-success' }
+  };
+  return map[pkg.pkgStatus || 'open'] || map.open;
 }
 
 export function ticketStatusInfo(status) {

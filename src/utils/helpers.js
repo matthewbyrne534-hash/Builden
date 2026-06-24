@@ -110,7 +110,18 @@ export function buildPkgNum(numSystem, pkgSeq) {
     .replace('{year}', new Date().getFullYear());
 }
 
+// Resolves the active personnel roster for a job: the full company-wide roster,
+// minus anyone the PM has removed from this specific job. One-way subtraction only —
+// adding/editing workers always happens at the company level, never inside a job.
+export function getJobRoster(job, companyRoster) {
+  const removed = new Set(job.removedRosterIds || []);
+  return (companyRoster || []).filter(w => !removed.has(w.id));
+}
 
+export const PERMISSION_LEVELS = [
+  { value: 'full', label: 'Full Access', description: 'Create/edit/delete packages, prepare packages, manage job setup and directory' },
+  { value: 'standard', label: 'Standard Access', description: 'Create and edit T&M tickets only, within packages that already exist' }
+];
 
 export const AUTH_TYPES = [
   'Authorization Email',

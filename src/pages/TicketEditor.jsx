@@ -94,7 +94,7 @@ function WorkerSelect({ value, onChange, workers, classifications, disabled }) {
 }
 
 // ─── LABOR ROW (foreman view - hours only, no rates shown) ───────────────────
-function LaborRow({ row, index, workers, classifications, onChange, onRemove, isReadOnly }) {
+function LaborRow({ row, index, workers, classifications, jobRates, onChange, onRemove, isReadOnly }) {
   const handleWorkerChange = (workerId) => {
     const worker = workers.find(w => w.id === workerId);
     if (!worker) {
@@ -102,15 +102,16 @@ function LaborRow({ row, index, workers, classifications, onChange, onRemove, is
       return;
     }
     const cls = classifications.find(c => c.id === worker.classId);
+    const rate = (jobRates || []).find(r => r.classId === worker.classId);
     onChange(index, {
       ...row,
       workerId: worker.id,
       workerName: worker.first + ' ' + worker.last,
       classId: worker.classId,
       className: cls?.name || '',
-      regRate: cls?.regRate || 0,
-      otRate: cls?.otRate || 0,
-      dtRate: cls?.dtRate || 0
+      regRate: rate?.regRate || 0,
+      otRate: rate?.otRate || 0,
+      dtRate: rate?.dtRate || 0
     });
   };
 
@@ -558,7 +559,7 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
             <tbody>
               {ticket.labor.map((row, i) => (
                 <LaborRow key={row.id || i} row={row} index={i} workers={jobRoster}
-                  classifications={state.classifications} onChange={setLabor} onRemove={removeLabor} isReadOnly={isReadOnly} />
+                  classifications={state.classifications} jobRates={job.classificationRates} onChange={setLabor} onRemove={removeLabor} isReadOnly={isReadOnly} />
               ))}
               {ticket.labor.length === 0 && (
                 <tr><td colSpan={6} style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', padding: '12px 10px' }}>No workers added yet.</td></tr>

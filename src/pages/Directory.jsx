@@ -1,7 +1,7 @@
 // src/pages/Directory.jsx
 import React, { useState } from 'react';
 import { useStore } from '../data/store';
-import { genId, initials } from '../utils/helpers';
+import { genId, initials, formatPhone } from '../utils/helpers';
 import { Modal, FormGroup, Input, Select, ConfirmModal, Tabs, SearchBar, Badge } from '../components/UI';
 
 export default function Directory() {
@@ -29,26 +29,50 @@ function InternalTeamSection() {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ first: '', last: '', email: '', phone: '', role: 'pm' });
+  const [form, setForm] = useState({ first: '', last: '', email: '', phone: '', role: '' });
+  const [addingNewRole, setAddingNewRole] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const filtered = state.internalTeam.filter(m =>
     (m.first + ' ' + m.last + ' ' + m.email).toLowerCase().includes(search.toLowerCase())
   );
 
-  function openAdd() { setForm({ first: '', last: '', email: '', phone: '', role: 'pm' }); setEditing(null); setShowModal(true); }
-  function openEdit(m) { setForm({ first: m.first, last: m.last, email: m.email, phone: m.phone, role: m.role }); setEditing(m); setShowModal(true); }
+  function openAdd() {
+    setForm({ first: '', last: '', email: '', phone: '', role: '' });
+    setAddingNewRole(state.internalRoles.length === 0);
+    setNewRoleName('');
+    setEditing(null);
+    setShowModal(true);
+  }
+  function openEdit(m) {
+    setForm({ first: m.first, last: m.last, email: m.email, phone: m.phone, role: m.role });
+    setAddingNewRole(false);
+    setNewRoleName('');
+    setEditing(m);
+    setShowModal(true);
+  }
+  function handleRoleSelect(val) {
+    if (val === 'not-listed') { setAddingNewRole(true); setForm(f => ({ ...f, role: '' })); }
+    else { setAddingNewRole(false); setForm(f => ({ ...f, role: val })); }
+  }
   function save() {
     if (!form.first || !form.last || !form.email) return alert('First name, last name, and email are required.');
+    let role = form.role;
+    if (addingNewRole) {
+      if (!newRoleName.trim()) return alert('Please enter a role title, or select an existing one.');
+      role = newRoleName.trim();
+      dispatch({ type: 'ADD_INTERNAL_ROLE', role });
+    } else if (!role) {
+      return alert('Please select a role or add a new one.');
+    }
     if (editing) {
-      dispatch({ type: 'UPDATE_INTERNAL_TEAM_MEMBER', member: { ...editing, ...form } });
+      dispatch({ type: 'UPDATE_INTERNAL_TEAM_MEMBER', member: { ...editing, ...form, role } });
     } else {
-      dispatch({ type: 'ADD_INTERNAL_TEAM_MEMBER', member: { id: genId(), ...form, inviteStatus: 'not-sent' } });
+      dispatch({ type: 'ADD_INTERNAL_TEAM_MEMBER', member: { id: genId(), ...form, role } });
     }
     setShowModal(false);
   }
-
-  const roleLabel = { pm: 'Project Manager', foreman: 'Foreman' };
 
   return (
     <div>
@@ -64,16 +88,16 @@ function InternalTeamSection() {
         <div className="card-header">
           <div className="card-header-left">
             <div className="card-title">Internal Team</div>
-            <div className="card-subtitle">Your company's PMs and Foremen — platform users with login access. Assign to specific jobs from the Job Directory.</div>
+            <div className="card-subtitle">Your company's staff — platform users with login access. Assign to specific jobs, with permission level set per job, from the Job Directory.</div>
           </div>
         </div>
         {filtered.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '12px 0' }}>No team members found.</p> : (
           <table className="dir-table" style={{ tableLayout: 'fixed', width: '100%' }}>
             <colgroup>
-              <col style={{ width: '22%' }} /><col style={{ width: '28%' }} /><col style={{ width: '16%' }} />
-              <col style={{ width: '14%' }} /><col style={{ width: '12%' }} /><col style={{ width: '8%' }} />
+              <col style={{ width: '22%' }} /><col style={{ width: '30%' }} /><col style={{ width: '18%' }} />
+              <col style={{ width: '20%' }} /><col style={{ width: '10%' }} />
             </colgroup>
-            <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th></th></tr></thead>
             <tbody>
               {filtered.map(m => (
                 <tr key={m.id}>
@@ -83,8 +107,7 @@ function InternalTeamSection() {
                   </div></td>
                   <td>{m.email}</td>
                   <td>{m.phone}</td>
-                  <td><Badge label={roleLabel[m.role] || m.role} cls={m.role === 'pm' ? 'badge-info' : 'badge-gray'} /></td>
-                  <td><Badge label={m.inviteStatus === 'active' ? 'Active' : m.inviteStatus === 'invited' ? 'Invite sent' : 'Not invited'} cls={m.inviteStatus === 'active' ? 'badge-success' : m.inviteStatus === 'invited' ? 'badge-info' : 'badge-gray'} /></td>
+                  <td><Badge label={m.role || '—'} cls="badge-info" /></td>
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button className="btn btn-icon btn-sm" onClick={() => openEdit(m)}><i className="ti ti-edit" /></button>
@@ -103,11 +126,22 @@ function InternalTeamSection() {
         <div className="form-grid form-grid-2">
           <FormGroup label="First name *"><Input value={form.first} onChange={v => setForm(f => ({ ...f, first: v }))} /></FormGroup>
           <FormGroup label="Last name *"><Input value={form.last} onChange={v => setForm(f => ({ ...f, last: v }))} /></FormGroup>
-          <FormGroup label="Role *">
-            <Select value={form.role} onChange={v => setForm(f => ({ ...f, role: v }))} options={[{ value: 'pm', label: 'Project Manager' }, { value: 'foreman', label: 'Foreman' }]} />
+          <FormGroup label="Role *" span="2">
+            {state.internalRoles.length === 0 ? (
+              <Input value={newRoleName} onChange={setNewRoleName} placeholder="e.g. Project Manager, Foreman, Admin, Owner" />
+            ) : (
+              <select className="form-input" value={addingNewRole ? 'not-listed' : form.role} onChange={e => handleRoleSelect(e.target.value)}>
+                <option value="">- Select role -</option>
+                {state.internalRoles.map(r => <option key={r} value={r}>{r}</option>)}
+                <option value="not-listed">+ Create new role</option>
+              </select>
+            )}
+            {addingNewRole && state.internalRoles.length > 0 && (
+              <Input value={newRoleName} onChange={setNewRoleName} placeholder="New role title" style={{ marginTop: 8 }} />
+            )}
           </FormGroup>
-          <FormGroup label="Phone"><Input value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
-          <FormGroup label="Email *" span="2"><Input value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} placeholder="name@company.com" /></FormGroup>
+          <FormGroup label="Phone"><Input value={form.phone} onChange={v => setForm(f => ({ ...f, phone: formatPhone(v) }))} placeholder="(555) 000-0000" /></FormGroup>
+          <FormGroup label="Email *"><Input value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} placeholder="name@company.com" /></FormGroup>
         </div>
       </Modal>
 
@@ -296,7 +330,7 @@ function GcDirectorySection() {
         <div className="form-grid form-grid-2">
           <FormGroup label="First name *"><Input value={superForm.first} onChange={v => setSuperForm(f => ({ ...f, first: v }))} /></FormGroup>
           <FormGroup label="Last name *"><Input value={superForm.last} onChange={v => setSuperForm(f => ({ ...f, last: v }))} /></FormGroup>
-          <FormGroup label="Phone"><Input value={superForm.phone} onChange={v => setSuperForm(f => ({ ...f, phone: v }))} placeholder="(555) 000-0000" /></FormGroup>
+          <FormGroup label="Phone"><Input value={superForm.phone} onChange={v => setSuperForm(f => ({ ...f, phone: formatPhone(v) }))} placeholder="(555) 000-0000" /></FormGroup>
           <FormGroup label="Email *"><Input value={superForm.email} onChange={v => setSuperForm(f => ({ ...f, email: v }))} placeholder="name@gc.com" /></FormGroup>
         </div>
         {!editSuper && (
@@ -313,7 +347,7 @@ function GcDirectorySection() {
             <div style={{ fontSize: 12, fontWeight: 700, color: '#185FA5', marginBottom: 12 }}><i className="ti ti-building" /> New GC company details</div>
             <div className="form-grid form-grid-2">
               <FormGroup label="Company name *" span="2"><Input value={inlineCompanyForm.name} onChange={v => setInlineCompanyForm(f => ({ ...f, name: v }))} placeholder="e.g. BBL Construction Services" /></FormGroup>
-              <FormGroup label="Phone"><Input value={inlineCompanyForm.phone} onChange={v => setInlineCompanyForm(f => ({ ...f, phone: v }))} /></FormGroup>
+              <FormGroup label="Phone"><Input value={inlineCompanyForm.phone} onChange={v => setInlineCompanyForm(f => ({ ...f, phone: formatPhone(v) }))} placeholder="(555) 000-0000" /></FormGroup>
               <FormGroup label="Email"><Input value={inlineCompanyForm.email} onChange={v => setInlineCompanyForm(f => ({ ...f, email: v }))} /></FormGroup>
               <FormGroup label="Address" span="2"><Input value={inlineCompanyForm.address} onChange={v => setInlineCompanyForm(f => ({ ...f, address: v }))} placeholder="Street, City, State ZIP" /></FormGroup>
             </div>
@@ -376,7 +410,7 @@ function GcDirectorySection() {
           footer={<><button className="btn" onClick={() => setShowCompanyModal(false)}>Cancel</button><button className="btn btn-primary" onClick={saveCompany}>Save</button></>}>
           <div className="form-grid form-grid-2">
             <FormGroup label="Company name *" span="2"><Input value={companyForm.name} onChange={v => setCompanyForm(f => ({ ...f, name: v }))} /></FormGroup>
-            <FormGroup label="Phone"><Input value={companyForm.phone} onChange={v => setCompanyForm(f => ({ ...f, phone: v }))} /></FormGroup>
+            <FormGroup label="Phone"><Input value={companyForm.phone} onChange={v => setCompanyForm(f => ({ ...f, phone: formatPhone(v) }))} placeholder="(555) 000-0000" /></FormGroup>
             <FormGroup label="Email"><Input value={companyForm.email} onChange={v => setCompanyForm(f => ({ ...f, email: v }))} /></FormGroup>
             <FormGroup label="Address" span="2"><Input value={companyForm.address} onChange={v => setCompanyForm(f => ({ ...f, address: v }))} /></FormGroup>
           </div>
@@ -445,7 +479,7 @@ function GcDirectorySection() {
         footer={<><button className="btn" onClick={() => setShowCompanyModal(false)}>Cancel</button><button className="btn btn-primary" onClick={saveCompany}>Save company</button></>}>
         <div className="form-grid form-grid-2">
           <FormGroup label="Company name *" span="2"><Input value={companyForm.name} onChange={v => setCompanyForm(f => ({ ...f, name: v }))} placeholder="e.g. BBL Construction Services" /></FormGroup>
-          <FormGroup label="Phone"><Input value={companyForm.phone} onChange={v => setCompanyForm(f => ({ ...f, phone: v }))} /></FormGroup>
+          <FormGroup label="Phone"><Input value={companyForm.phone} onChange={v => setCompanyForm(f => ({ ...f, phone: formatPhone(v) }))} placeholder="(555) 000-0000" /></FormGroup>
           <FormGroup label="Email"><Input value={companyForm.email} onChange={v => setCompanyForm(f => ({ ...f, email: v }))} /></FormGroup>
           <FormGroup label="Address" span="2"><Input value={companyForm.address} onChange={v => setCompanyForm(f => ({ ...f, address: v }))} /></FormGroup>
         </div>

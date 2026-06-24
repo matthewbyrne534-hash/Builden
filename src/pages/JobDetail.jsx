@@ -33,8 +33,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
   const executed = job.packages.reduce((s, p) => s + calcPackageTotals(p).executed, 0);
 
   const jobMembers = job.members || [];
-  const pms = jobMembers.filter(m => m.role === 'pm');
-  const foremen = jobMembers.filter(m => m.role === 'foreman');
+  const internalMembers = jobMembers.filter(m => m.sourceType === 'internal');
   const supers = jobMembers.filter(m => m.role === 'super');
 
   const jobRoster = getJobRoster(job, state.personnelRoster);
@@ -65,7 +64,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
     setAddUserRole(role);
     setUserSearch('');
     setSelectedSourceId(null);
-    setSelectedPermission(role === 'pm' ? 'full' : 'standard');
+    setSelectedPermission('standard');
     setShowAddUser(true);
   }
 
@@ -79,7 +78,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
     } else {
       const it = state.internalTeam.find(x => x.id === selectedSourceId);
       if (!it) return;
-      const member = { id: genId(), sourceType: 'internal', sourceId: it.id, name: it.first + ' ' + it.last, email: it.email, phone: it.phone, role: addUserRole, permission: selectedPermission, inviteSent: false, inviteStatus: it.inviteStatus || 'not-sent' };
+      const member = { id: genId(), sourceType: 'internal', sourceId: it.id, name: it.first + ' ' + it.last, email: it.email, phone: it.phone, title: it.role, permission: selectedPermission, inviteSent: false, inviteStatus: 'not-sent' };
       dispatch({ type: 'ADD_JOB_MEMBER', jobId: job.id, member });
     }
     setShowAddUser(false);
@@ -99,17 +98,17 @@ export default function JobDetail({ jobId, navigate, initialView }) {
   const alreadyOnJobIds = new Set(jobMembers.filter(m => m.sourceType === 'internal').map(m => m.sourceId));
   const alreadySuperIds = new Set(jobMembers.filter(m => m.sourceType === 'gc').map(m => m.sourceId));
 
-  const availableInternal = state.internalTeam.filter(it => it.role === addUserRole && !alreadyOnJobIds.has(it.id) &&
+  const availableInternal = state.internalTeam.filter(it => !alreadyOnJobIds.has(it.id) &&
     (it.first + ' ' + it.last).toLowerCase().includes(userSearch.toLowerCase()));
   const availableSupers = state.gcSupers.filter(s => !alreadySuperIds.has(s.id) &&
     (s.first + ' ' + s.last).toLowerCase().includes(userSearch.toLowerCase()));
 
-  const roleLabel = { pm: 'Sub Project Manager', foreman: 'Sub Foreman', super: 'GC Superintendent' };
+  const roleLabel = { internal: 'Team Member', super: 'GC Superintendent' };
 
   function removeFromJobRoster(worker) { setConfirmRemoveRoster(worker); }
   const filteredJobRoster = jobRoster.filter(w => (w.first + ' ' + w.last).toLowerCase().includes(rosterSearch.toLowerCase()));
 
-  function MemberRow({ member }) {
+  function MemberRow({ member, showTitle }) {
     const statusMap = {
       'not-sent': { label: 'Not invited', cls: 'badge-gray' },
       'invited': { label: 'Invite sent', cls: 'badge-info' },
@@ -124,6 +123,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         </div></td>
         <td>{member.email}</td>
         <td>{member.phone}</td>
+        {showTitle && <td style={{ color: '#666' }}>{member.title || '—'}</td>}
         <td>
           {member.role !== 'super' ? (
             <select className="form-input" style={{ fontSize: 12 }} value={member.permission || 'standard'} onChange={e => updatePermission(member, e.target.value)}>
@@ -235,39 +235,19 @@ export default function JobDetail({ jobId, navigate, initialView }) {
           <div className="card">
             <div className="card-header">
               <div className="card-header-left">
-                <div className="card-title">Sub Project Managers</div>
-                <div className="card-subtitle">From your Internal Team — set permission level per job</div>
+                <div className="card-title">Internal Team (this job)</div>
+                <div className="card-subtitle">From your company's Internal Team — set permission level independently per job, regardless of title</div>
               </div>
-              <button className="btn btn-primary btn-sm" onClick={() => openAddUserModal('pm')}><i className="ti ti-plus" /> Add PM</button>
+              <button className="btn btn-primary btn-sm" onClick={() => openAddUserModal('internal')}><i className="ti ti-plus" /> Add team member</button>
             </div>
-            {pms.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0', fontStyle: 'italic' }}>No PMs added yet.</p> : (
+            {internalMembers.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0', fontStyle: 'italic' }}>No team members added yet.</p> : (
               <table className="dir-table" style={{ tableLayout: 'fixed', width: '100%' }}>
                 <colgroup>
-                  <col style={{ width: '20%' }} /><col style={{ width: '26%' }} /><col style={{ width: '14%' }} />
-                  <col style={{ width: '18%' }} /><col style={{ width: '14%' }} /><col style={{ width: '8%' }} />
+                  <col style={{ width: '18%' }} /><col style={{ width: '22%' }} /><col style={{ width: '13%' }} />
+                  <col style={{ width: '15%' }} /><col style={{ width: '16%' }} /><col style={{ width: '8%' }} /><col style={{ width: '8%' }} />
                 </colgroup>
-                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Permission</th><th>Status</th><th></th></tr></thead>
-                <tbody>{pms.map(m => <MemberRow key={m.id} member={m} />)}</tbody>
-              </table>
-            )}
-          </div>
-
-          <div className="card">
-            <div className="card-header">
-              <div className="card-header-left">
-                <div className="card-title">Sub Foremen</div>
-                <div className="card-subtitle">From your Internal Team — set permission level per job</div>
-              </div>
-              <button className="btn btn-primary btn-sm" onClick={() => openAddUserModal('foreman')}><i className="ti ti-plus" /> Add foreman</button>
-            </div>
-            {foremen.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0', fontStyle: 'italic' }}>No foremen added yet.</p> : (
-              <table className="dir-table" style={{ tableLayout: 'fixed', width: '100%' }}>
-                <colgroup>
-                  <col style={{ width: '20%' }} /><col style={{ width: '26%' }} /><col style={{ width: '14%' }} />
-                  <col style={{ width: '18%' }} /><col style={{ width: '14%' }} /><col style={{ width: '8%' }} />
-                </colgroup>
-                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Permission</th><th>Status</th><th></th></tr></thead>
-                <tbody>{foremen.map(m => <MemberRow key={m.id} member={m} />)}</tbody>
+                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Title</th><th>Permission</th><th>Status</th><th></th></tr></thead>
+                <tbody>{internalMembers.map(m => <MemberRow key={m.id} member={m} showTitle />)}</tbody>
               </table>
             )}
           </div>
@@ -374,7 +354,7 @@ export default function JobDetail({ jobId, navigate, initialView }) {
                     <div className="row-icon">{initials(it.first + ' ' + it.last)}</div>
                     <div className="row-body">
                       <div className="row-title">{it.first} {it.last} {selected && <i className="ti ti-check" style={{ color: '#185FA5', marginLeft: 4 }} />}</div>
-                      <div className="row-sub">{it.email}</div>
+                      <div className="row-sub">{it.role ? it.role + ' · ' : ''}{it.email}</div>
                     </div>
                   </div>
                 );

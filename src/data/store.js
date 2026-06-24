@@ -7,11 +7,15 @@ const initialState = {
 
   profile: { name: 'Granite Peak Contracting', address: '14 Industrial Park Rd', city: 'Plattsburgh, NY 12901', phone: '(518) 555-7700', logo: null },
 
+  // Company-wide list of role TITLES used across the Internal Team — grows organically,
+  // same picker pattern as labor classifications and materials (type new, or pick existing).
+  internalRoles: ['Project Manager', 'Foreman'],
+
   internalTeam: [
-    { id: 'it1', first: 'Chris', last: 'Ruggles', email: 'cruggles@granitepeak.com', phone: '(518) 555-2210', role: 'pm', inviteStatus: 'not-sent' },
-    { id: 'it2', first: 'Dana', last: 'Whitfield', email: 'dwhitfield@granitepeak.com', phone: '(518) 555-2211', role: 'pm', inviteStatus: 'not-sent' },
-    { id: 'it3', first: 'Mike', last: 'Donovan', email: 'mdonovan@granitepeak.com', phone: '(518) 555-2212', role: 'foreman', inviteStatus: 'not-sent' },
-    { id: 'it4', first: 'Tony', last: 'Marchetti', email: 'tmarchetti@granitepeak.com', phone: '(518) 555-2213', role: 'foreman', inviteStatus: 'not-sent' }
+    { id: 'it1', first: 'Chris', last: 'Ruggles', email: 'cruggles@granitepeak.com', phone: '(518) 555-2210', role: 'Project Manager' },
+    { id: 'it2', first: 'Dana', last: 'Whitfield', email: 'dwhitfield@granitepeak.com', phone: '(518) 555-2211', role: 'Project Manager' },
+    { id: 'it3', first: 'Mike', last: 'Donovan', email: 'mdonovan@granitepeak.com', phone: '(518) 555-2212', role: 'Foreman' },
+    { id: 'it4', first: 'Tony', last: 'Marchetti', email: 'tmarchetti@granitepeak.com', phone: '(518) 555-2213', role: 'Foreman' }
   ],
 
   classifications: [
@@ -57,7 +61,7 @@ const initialState = {
         { classId: 'c3', regRate: 32.00, otRate: 48.00, dtRate: 64.00 }
       ],
       members: [
-        { id: 'jm1', sourceType: 'internal', sourceId: 'it1', name: 'Chris Ruggles', email: 'cruggles@granitepeak.com', phone: '(518) 555-2210', role: 'pm', permission: 'full', inviteSent: false, inviteStatus: 'not-sent' },
+        { id: 'jm1', sourceType: 'internal', sourceId: 'it1', name: 'Chris Ruggles', email: 'cruggles@granitepeak.com', phone: '(518) 555-2210', title: 'Project Manager', permission: 'full', inviteSent: false, inviteStatus: 'not-sent' },
         { id: 'jm2', sourceType: 'gc', sourceId: 'gs1', name: 'Scott Hamilton', email: 'shamilton@bblcs.com', phone: '(518) 555-3301', role: 'super' },
         { id: 'jm3', sourceType: 'gc', sourceId: 'gs2', name: 'Paul Wilson', email: 'pwilson@bblcs.com', phone: '(518) 555-3302', role: 'super' }
       ],
@@ -80,6 +84,7 @@ function reducer(state, action) {
     case 'ADD_INTERNAL_TEAM_MEMBER': return { ...state, internalTeam: [...state.internalTeam, action.member] };
     case 'UPDATE_INTERNAL_TEAM_MEMBER': return { ...state, internalTeam: state.internalTeam.map(m => m.id === action.member.id ? action.member : m) };
     case 'REMOVE_INTERNAL_TEAM_MEMBER': return { ...state, internalTeam: state.internalTeam.filter(m => m.id !== action.id) };
+    case 'ADD_INTERNAL_ROLE': return { ...state, internalRoles: state.internalRoles.includes(action.role) ? state.internalRoles : [...state.internalRoles, action.role] };
 
     case 'ADD_CLS': return { ...state, classifications: [...state.classifications, action.cls] };
     case 'UPDATE_CLS': return { ...state, classifications: state.classifications.map(c => c.id === action.cls.id ? action.cls : c) };

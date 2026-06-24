@@ -15,9 +15,9 @@ const initialState = {
   ],
 
   classifications: [
-    { id: 'c1', name: 'Foreman', regRate: 48.50, otRate: 72.75, dtRate: 97.00 },
-    { id: 'c2', name: 'Carpenter', regRate: 38.00, otRate: 57.00, dtRate: 76.00 },
-    { id: 'c3', name: 'Laborer', regRate: 32.00, otRate: 48.00, dtRate: 64.00 }
+    { id: 'c1', name: 'Foreman' },
+    { id: 'c2', name: 'Carpenter' },
+    { id: 'c3', name: 'Laborer' }
   ],
   personnelRoster: [
     { id: 'w1', first: 'Mike', last: 'Donovan', classId: 'c1' },
@@ -51,6 +51,11 @@ const initialState = {
       id: 'j1', num: '241026', name: 'BOCES - Plattsburgh', address: '32 Bow Arrow Point Drive', city: 'Plattsburgh', state: 'NY', zip: '12901',
       gc: 'BBL Construction Services, LLC', owner: 'CIDC, Inc.', ae: 'WCGS / Huston',
       removedRosterIds: [],
+      classificationRates: [
+        { classId: 'c1', regRate: 48.50, otRate: 72.75, dtRate: 97.00 },
+        { classId: 'c2', regRate: 38.00, otRate: 57.00, dtRate: 76.00 },
+        { classId: 'c3', regRate: 32.00, otRate: 48.00, dtRate: 64.00 }
+      ],
       members: [
         { id: 'jm1', sourceType: 'internal', sourceId: 'it1', name: 'Chris Ruggles', email: 'cruggles@granitepeak.com', phone: '(518) 555-2210', role: 'pm', permission: 'full', inviteSent: false, inviteStatus: 'not-sent' },
         { id: 'jm2', sourceType: 'gc', sourceId: 'gs1', name: 'Scott Hamilton', email: 'shamilton@bblcs.com', phone: '(518) 555-3301', role: 'super' },
@@ -85,6 +90,16 @@ function reducer(state, action) {
 
     case 'REMOVE_ROSTER_FROM_JOB': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, removedRosterIds: [...(j.removedRosterIds || []), action.workerId] } : j) };
     case 'RESTORE_ROSTER_TO_JOB': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, removedRosterIds: (j.removedRosterIds || []).filter(id => id !== action.workerId) } : j) };
+
+    // Job-level rate for a classification (Regular/OT/DT) - rates always live per job, never company-wide
+    case 'SET_JOB_CLASSIFICATION_RATE': return { ...state, jobs: state.jobs.map(j => {
+        if (j.id !== action.jobId) return j;
+        const existing = (j.classificationRates || []).find(r => r.classId === action.classId);
+        const rates = existing
+          ? (j.classificationRates || []).map(r => r.classId === action.classId ? { ...r, ...action.rates } : r)
+          : [...(j.classificationRates || []), { classId: action.classId, ...action.rates }];
+        return { ...j, classificationRates: rates };
+      }) };
 
     case 'ADD_GC_COMPANY': return { ...state, gcCompanies: [...state.gcCompanies, action.company] };
     case 'UPDATE_GC_COMPANY': return { ...state, gcCompanies: state.gcCompanies.map(c => c.id === action.company.id ? action.company : c) };

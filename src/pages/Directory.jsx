@@ -5,7 +5,7 @@ import { genId, initials } from '../utils/helpers';
 import { Modal, FormGroup, Input, Select, ConfirmModal, Tabs, SearchBar, Badge } from '../components/UI';
 
 export default function Directory() {
-  const { state, dispatch } = useStore();
+  const { state } = useStore();
   const [section, setSection] = useState('internal'); // 'internal' | 'roster' | 'gc'
 
   return (

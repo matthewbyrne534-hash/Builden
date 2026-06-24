@@ -14,6 +14,16 @@ export function initials(name) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().substr(0, 2);
 }
 
+// Formats any phone input into (XXX) XXX-XXXX as the user types, regardless of
+// how they enter it (with dashes, dots, spaces, or no formatting at all).
+export function formatPhone(value) {
+  const digits = (value || '').replace(/\D/g, '').slice(0, 10);
+  if (digits.length === 0) return '';
+  if (digits.length < 4) return '(' + digits;
+  if (digits.length < 7) return '(' + digits.slice(0, 3) + ') ' + digits.slice(3);
+  return '(' + digits.slice(0, 3) + ') ' + digits.slice(3, 6) + '-' + digits.slice(6);
+}
+
 // Ticket totals — no OH&P applied here, just raw hours x rates
 // OH&P is applied at package level by the PM during package preparation
 export function calcTicketTotals(ticket) {

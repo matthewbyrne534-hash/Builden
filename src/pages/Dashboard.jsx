@@ -20,12 +20,10 @@ export default function Dashboard({ navigate }) {
   jobs.forEach(j => {
     j.packages.forEach(p => {
       const tots = calcPackageTotals(p);
-      const isOpen = p.tickets.some(t => ['draft', 'pending-sig'].includes(t.status));
-      const isPending = p.tickets.some(t => t.status === 'submitted');
-      const isExecuted = p.tickets.length > 0 && p.tickets.every(t => ['signed', 'approved'].includes(t.status));
-      if (isOpen) { totalOpenVal += tots.grand; totalOpenPkgs++; }
-      if (isPending) { totalPendingVal += tots.grand; totalPendingPkgs++; }
-      if (isExecuted) { totalExecutedVal += tots.executed; totalExecutedPkgs++; }
+      const status = p.pkgStatus || 'open';
+      if (status === 'open') { totalOpenVal += tots.grand; totalOpenPkgs++; }
+      if (status === 'pending') { totalPendingVal += tots.grand; totalPendingPkgs++; }
+      if (status === 'executed') { totalExecutedVal += tots.executed; totalExecutedPkgs++; }
     });
   });
 
@@ -38,7 +36,7 @@ export default function Dashboard({ navigate }) {
     const job = {
       id: genId(), name: form.name, num: form.num, address: form.address, city: form.city,
       state: form.state, zip: form.zip, gc: form.gc, owner: form.owner, ae: form.ae,
-      supers: [], classifications: [], workers: [], packages: []
+      removedRosterIds: [], classificationRates: [], members: [], packages: []
     };
     dispatch({ type: 'ADD_JOB', job });
     dispatch({ type: 'SET_CURRENT_JOB', id: job.id });
@@ -114,11 +112,11 @@ export default function Dashboard({ navigate }) {
               {filtered.length === 0 ? (
                 <tr><td colSpan={9} style={{ padding: '24px 12px', textAlign: 'center', color: '#aaa', fontStyle: 'italic' }}>No jobs found.</td></tr>
               ) : filtered.map(j => {
-                const openPkgs = j.packages.filter(p => p.tickets.some(t => ['draft', 'pending-sig'].includes(t.status)));
+                const openPkgs = j.packages.filter(p => (p.pkgStatus || 'open') === 'open');
                 const openVal = openPkgs.reduce((s, p) => s + calcPackageTotals(p).grand, 0);
-                const pendingPkgs = j.packages.filter(p => p.tickets.some(t => t.status === 'submitted'));
+                const pendingPkgs = j.packages.filter(p => (p.pkgStatus || 'open') === 'pending');
                 const pendingVal = pendingPkgs.reduce((s, p) => s + calcPackageTotals(p).grand, 0);
-                const executedPkgs = j.packages.filter(p => p.tickets.length > 0 && p.tickets.every(t => ['signed', 'approved'].includes(t.status)));
+                const executedPkgs = j.packages.filter(p => (p.pkgStatus || 'open') === 'executed');
                 const executedVal = j.packages.reduce((s, p) => s + calcPackageTotals(p).executed, 0);
                 return (
                   <tr key={j.id} style={{ borderBottom: '1px solid #f2f2f0', cursor: 'pointer' }}

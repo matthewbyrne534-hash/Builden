@@ -7,10 +7,9 @@ import { Breadcrumb, Badge, Notice, EmptyState, ConfirmModal, Modal, FormGroup, 
 function ticketStatusInfo(status) {
   const map = {
     draft: { label: 'Draft', cls: 'badge-gray' },
-    'pending-sig': { label: 'Awaiting sig', cls: 'badge-warning' },
-    signed: { label: 'Signed', cls: 'badge-success' },
-    submitted: { label: 'Submitted', cls: 'badge-info' },
-    approved: { label: 'Approved', cls: 'badge-success' },
+    'awaiting-foreman-sig': { label: 'Awaiting Foreman Signature', cls: 'badge-warning' },
+    'awaiting-super-sig': { label: 'Awaiting Super Signature', cls: 'badge-info' },
+    executed: { label: 'Executed', cls: 'badge-success' },
     void: { label: 'Void', cls: 'badge-red' }
   };
   return map[status] || { label: status, cls: 'badge-gray' };
@@ -32,7 +31,7 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
 
   const prepSettings = pkg.prepSettings || null;
   const tots = calcPackageTotalsWithOhp(pkg, prepSettings);
-  const executed = pkg.tickets.filter(t => ['signed', 'submitted', 'approved'].includes(t.status))
+  const executed = pkg.tickets.filter(t => t.status === 'executed')
     .reduce((s, t) => {
       let base = 0;
       (t.labor || []).forEach(r => { base += (r.reg||0)*(r.regRate||0) + (r.ot||0)*(r.otRate||0) + (r.dt||0)*(r.dtRate||0); });
@@ -43,7 +42,7 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
 
   // Labor hours summary by classification for prep modal
   const laborByClass = {};
-  pkg.tickets.forEach(t => {
+  pkg.tickets.filter(t => t.status !== 'void').forEach(t => {
     t.labor.forEach(r => {
       const k = r.className || r.classId;
       if (!laborByClass[k]) laborByClass[k] = { name: r.className, reg: 0, ot: 0, dt: 0, regRate: r.regRate || 0, otRate: r.otRate || 0, dtRate: r.dtRate || 0 };
@@ -55,7 +54,7 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
 
   // Materials summary for prep modal
   const matSummary = {};
-  pkg.tickets.forEach(t => {
+  pkg.tickets.filter(t => t.status !== 'void').forEach(t => {
     (t.materials || []).forEach(r => {
       const k = r.desc + '|' + r.unit;
       if (!matSummary[k]) matSummary[k] = { desc: r.desc, unit: r.unit, qty: 0, unitPrice: r.unitPrice || r.rate || 0 };
@@ -79,7 +78,7 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
   }
 
   function deleteTicket(ticket) {
-    if (ticket.status !== 'draft') { alert('Cannot delete a signed or submitted ticket.'); return; }
+    if (ticket.status !== 'draft') { alert('Cannot delete a ticket once it has been submitted for signature, executed, or voided.'); return; }
     setConfirmDelete(ticket);
   }
 
@@ -135,8 +134,8 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
       </div>
 
       {pkg.approvedAmount && <Notice type="success">GC approved: {fmt(pkg.approvedAmount)}</Notice>}
-      {!prepSettings && pkg.tickets.some(t => t.status === 'signed') && (
-        <Notice type="warn">All tickets signed. <strong>Prepare the package</strong> to apply rates and OH&P before generating the PDF.</Notice>
+      {!prepSettings && pkg.tickets.some(t => t.status === 'executed') && (
+        <Notice type="warn">Tickets have been executed. <strong>Prepare the package</strong> to apply rates and OH&P before generating the PDF.</Notice>
       )}
 
       <div className="card">
@@ -162,22 +161,33 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
           <EmptyState icon="file-plus" message="No tickets yet. Add your first daily ticket."
             action={<button className="btn btn-primary btn-sm" onClick={addTicket}><i className="ti ti-plus" /> Add ticket</button>} />
         ) : (
-          pkg.tickets.map(t => {
-            const tst = ticketStatusInfo(t.status);
-            const totalHrs = t.labor.reduce((s, r) => s + (r.reg || 0) + (r.ot || 0) + (r.dt || 0), 0);
-            const matTotal = (t.materials || []).reduce((s, r) => s + (r.qty||0)*(r.unitPrice||r.rate||0), 0);
+          // Group revisions beneath their original ticket so the audit trail is visually clear
+          pkg.tickets.filter(t => !t.revisionOf).map(t => {
+            const revisions = pkg.tickets.filter(r => r.revisionOf === t.id);
+            function TicketRow({ ticket: tk, isRevision }) {
+              const tst = ticketStatusInfo(tk.status);
+              const totalHrs = tk.labor.reduce((s, r) => s + (r.reg || 0) + (r.ot || 0) + (r.dt || 0), 0);
+              const matTotal = (tk.materials || []).reduce((s, r) => s + (r.qty||0)*(r.unitPrice||r.rate||0), 0);
+              return (
+                <div key={tk.id} className="list-row" style={isRevision ? { marginLeft: 28, borderLeft: '2px solid #C5DEFA', paddingLeft: 12, background: '#fafbfd' } : {}}>
+                  {isRevision && <i className="ti ti-corner-down-right" style={{ color: '#185FA5', fontSize: 16, flexShrink: 0 }} />}
+                  <div className="row-icon" style={{ background: isRevision ? '#EBF3FB' : '#E8F5DA', color: isRevision ? '#185FA5' : '#2A6008', fontSize: 10 }}>{tk.num}</div>
+                  <div className="row-body clickable" onClick={() => navigate('ticket-editor', { jobId: job.id, pkgId: pkg.id, ticketId: tk.id })}>
+                    <div className="row-title">{tk.desc || '(no description)'}</div>
+                    <div className="row-sub">{tk.date} · {tk.labor.length} worker{tk.labor.length !== 1 ? 's' : ''} · {totalHrs} hrs{matTotal > 0 ? ' · ' + fmt(matTotal) + ' material' : ''}</div>
+                  </div>
+                  <Badge label={tst.label} cls={tst.cls} />
+                  <div className="row-actions">
+                    <button className="btn btn-icon btn-sm btn-danger" onClick={() => deleteTicket(tk)}><i className="ti ti-trash" /></button>
+                  </div>
+                </div>
+              );
+            }
             return (
-              <div key={t.id} className="list-row">
-                <div className="row-icon" style={{ background: '#E8F5DA', color: '#2A6008', fontSize: 10 }}>{t.num}</div>
-                <div className="row-body clickable" onClick={() => navigate('ticket-editor', { jobId: job.id, pkgId: pkg.id, ticketId: t.id })}>
-                  <div className="row-title">{t.desc || '(no description)'}</div>
-                  <div className="row-sub">{t.date} · {t.labor.length} worker{t.labor.length !== 1 ? 's' : ''} · {totalHrs} hrs{matTotal > 0 ? ' · ' + fmt(matTotal) + ' materials' : ''}</div>
-                </div>
-                <Badge label={tst.label} cls={tst.cls} />
-                <div className="row-actions">
-                  <button className="btn btn-icon btn-sm btn-danger" onClick={() => deleteTicket(t)}><i className="ti ti-trash" /></button>
-                </div>
-              </div>
+              <React.Fragment key={t.id}>
+                <TicketRow ticket={t} isRevision={false} />
+                {revisions.map(r => <TicketRow key={r.id} ticket={r} isRevision={true} />)}
+              </React.Fragment>
             );
           })
         )}
@@ -222,7 +232,7 @@ export default function PackageDetail({ jobId, pkgId, navigate }) {
 
         {Object.keys(matSummary).length > 0 && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Material Summary</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Material &amp; Other Expenses Summary</div>
             <div className="tbl-wrap">
               <table className="tbl">
                 <thead><tr><th>Description</th><th>Unit</th><th>Qty</th><th>Unit price</th><th style={{ width: 100 }}>Subtotal</th></tr></thead>

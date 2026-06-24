@@ -16,7 +16,7 @@ export default function PackagePreview({ jobId, pkgId, navigate }) {
 
   // Aggregate labor by classification
   const laborByClass = {};
-  pkg.tickets.forEach(t => {
+  pkg.tickets.filter(t => t.status !== 'void').forEach(t => {
     (t.labor || []).forEach(r => {
       const k = r.className || r.classId || 'Unknown';
       if (!laborByClass[k]) laborByClass[k] = { name: r.className || k, workers: new Set(), reg: 0, ot: 0, dt: 0, regRate: r.regRate || 0, otRate: r.otRate || 0, dtRate: r.dtRate || 0 };
@@ -29,7 +29,7 @@ export default function PackagePreview({ jobId, pkgId, navigate }) {
 
   // Aggregate materials
   const matByDesc = {};
-  pkg.tickets.forEach(t => {
+  pkg.tickets.filter(t => t.status !== 'void').forEach(t => {
     (t.materials || []).forEach(r => {
       const k = r.desc + '|' + r.unit;
       if (!matByDesc[k]) matByDesc[k] = { desc: r.desc, unit: r.unit, qty: 0, unitPrice: r.unitPrice || r.rate || 0 };
@@ -159,7 +159,7 @@ export default function PackagePreview({ jobId, pkgId, navigate }) {
         {/* MATERIAL SUMMARY */}
         {Object.keys(matByDesc).length > 0 && (
           <>
-            <div style={s.secTitle}>Material Summary</div>
+            <div style={s.secTitle}>Material &amp; Other Expenses Summary</div>
             <table style={s.tbl}>
               <thead><tr>
                 <th style={s.th}>Description</th><th style={s.th}>Unit</th>
@@ -206,7 +206,7 @@ export default function PackagePreview({ jobId, pkgId, navigate }) {
       </div>
 
       {/* ── DAILY TICKETS ── */}
-      {pkg.tickets.map((t, ti) => (
+      {pkg.tickets.filter(t => t.status !== 'void').map((t, ti) => (
         <div key={t.id} style={s.page}>
           <div style={s.hdr}>
             {profile.logo
@@ -221,6 +221,7 @@ export default function PackagePreview({ jobId, pkgId, navigate }) {
 
           <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 14, marginBottom: 12, textTransform: 'uppercase' }}>
             Time &amp; Material Ticket — {t.num}
+            {t.revisionOf && <span style={{ display: 'block', fontSize: 10, color: '#B91C1C', textTransform: 'none', fontWeight: 700, marginTop: 4 }}>Revised resubmission — supersedes original signed ticket</span>}
           </div>
 
           <FieldRow label="Project" value={job.name} label2="Date" value2={t.date} />
@@ -249,8 +250,8 @@ export default function PackagePreview({ jobId, pkgId, navigate }) {
             </tbody>
           </table>
 
-          {/* MATERIAL */}
-          <div style={s.secTitle}>Material</div>
+          {/* MATERIAL & OTHER EXPENSES */}
+          <div style={s.secTitle}>Material &amp; Other Expenses</div>
           <table style={s.tbl}>
             <thead><tr>
               <th style={s.th}>Description</th><th style={s.th}>Unit</th>

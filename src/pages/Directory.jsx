@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../data/store';
 import { genId, initials, formatPhone } from '../utils/helpers';
-import { Modal, FormGroup, Input, Select, ConfirmModal, Tabs, SearchBar, Badge } from '../components/UI';
+import { Modal, FormGroup, Input, ConfirmModal, Tabs, SearchBar, Badge } from '../components/UI';
 
 export default function Directory() {
   const { state } = useStore();

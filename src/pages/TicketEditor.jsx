@@ -344,7 +344,7 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
 
   if (!job || !pkg || !ticket) return <div className="card"><p style={{ color: '#999' }}>Ticket not found.</p></div>;
 
-  const isReadOnly = ['signed', 'approved', 'submitted'].includes(ticket.status);
+  const isReadOnly = ticket.status === 'executed' || ticket.status === 'void';
   const prevDescs = [...new Set(pkg.tickets.filter(t => t.id !== ticketId).map(t => t.desc).filter(Boolean))];
 
   // Unique materials (desc + unit) used anywhere else in this package, for the material picker dropdown
@@ -369,29 +369,113 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
   };
   const removePhoto = (idx) => setTicket(t => ({ ...t, photos: t.photos.filter((_, i) => i !== idx) }));
 
-  function saveToStore(newStatus) {
-    const data = { ...ticket };
+  function saveToStore(newStatus, extra) {
+    const data = { ...ticket, ...(extra || {}) };
     if (newStatus) data.status = newStatus;
     dispatch({ type: 'UPDATE_TICKET', jobId: job.id, pkgId: pkg.id, ticketId: ticket.id, data });
   }
   function saveDraft() { saveToStore('draft'); navigate('package-detail', { jobId: job.id, pkgId: pkg.id }); }
+
   function submitForSig() {
     if (!ticket.foremanName) { alert('Please select a foreman before submitting.'); return; }
     if (!ticket.superName) { alert('Please select a superintendent before submitting.'); return; }
-    saveToStore('pending-sig');
+    saveToStore('awaiting-foreman-sig');
     alert(`Ticket ${ticket.num} submitted.\n\nDocuSign sent to ${ticket.foremanName} (Foreman).\nOnce signed, it routes to ${ticket.superName} for superintendent sign-off.`);
     navigate('package-detail', { jobId: job.id, pkgId: pkg.id });
   }
-  function markSigned() {
+
+  // Foreman signs -> auto-advances to awaiting Super signature.
+  // (This is the manual stand-in today for what a DocuSign webhook will trigger automatically later.)
+  function recordForemanSignature() {
     const now = new Date().toLocaleString();
-    setTicket(t => ({ ...t, foremanSignedAt: now, superSignedAt: now }));
-    saveToStore2('signed', { foremanSignedAt: now, superSignedAt: now });
+    saveToStore('awaiting-super-sig', { foremanSignedAt: now });
     navigate('package-detail', { jobId: job.id, pkgId: pkg.id });
   }
-  function saveToStore2(newStatus, extra) {
-    const data = { ...ticket, ...extra };
-    if (newStatus) data.status = newStatus;
-    dispatch({ type: 'UPDATE_TICKET', jobId: job.id, pkgId: pkg.id, ticketId: ticket.id, data });
+
+  // Super signs -> ticket becomes Executed, fully final.
+  function recordSuperSignature() {
+    const now = new Date().toLocaleString();
+    saveToStore('executed', { superSignedAt: now });
+    navigate('package-detail', { jobId: job.id, pkgId: pkg.id });
+  }
+
+  // VOID — used while Awaiting Foreman/Super Signature.
+  // Simply resets the ticket back to Draft so it can be corrected, resubmitted,
+  // or deleted. No revision is created since nothing has been executed yet.
+  function voidToDraft() {
+    const ok = window.confirm('This will bring the ticket back to draft mode. Are you sure you want to void?');
+    if (!ok) return;
+    saveToStore('draft', { foremanSignedAt: null, superSignedAt: null });
+  }
+
+  // VOID — used on an EXECUTED ticket.
+  // The ticket is permanently marked void (never resets to draft), with a
+  // required explanation for the record. It drops out of all totals and the
+  // printed PDF, but stays visible if you click into it, where a "Create
+  // Revision" option remains available later if it turns out one is needed.
+  function voidExecuted() {
+    const reason = window.prompt('Please explain why this executed ticket is being voided (this will be saved for the record):');
+    if (reason === null) return; // cancelled
+    if (!reason.trim()) { alert('A reason is required to void an executed ticket.'); return; }
+    saveToStore('void', { voidedAt: new Date().toLocaleString(), voidReason: reason.trim() });
+    navigate('package-detail', { jobId: job.id, pkgId: pkg.id });
+  }
+
+  // VOID & CREATE REVISION — used on an EXECUTED ticket.
+  // Same permanent void as above, plus immediately creates a new
+  // {original} Rev N ticket starting at Draft for resubmission.
+  function voidAndCreateRevision() {
+    const ok = window.confirm('This will void the original ticket and create a revision for resubmission. Are you sure you want to void and create a revision?');
+    if (!ok) return;
+    const reason = window.prompt('Please explain why this ticket needs a revision (this will be saved for the record):');
+    if (reason === null) return; // cancelled
+    if (!reason.trim()) { alert('A reason is required.'); return; }
+
+    const baseNum = ticket.num.replace(/\s+Rev\s+\d+$/i, '');
+    const nextRevNum = (ticket.revisionNum || 0) + 1;
+    const revisedTicket = {
+      ...ticket,
+      id: genId(),
+      num: `${baseNum} Rev ${nextRevNum}`,
+      status: 'draft',
+      revisionOf: ticket.revisionOf || ticket.id,
+      revisionNum: nextRevNum,
+      foremanSignedAt: null,
+      superSignedAt: null,
+      docusignEnvelopeId: null,
+      voidedAt: null,
+      voidReason: null
+    };
+    saveToStore('void', { voidedAt: new Date().toLocaleString(), voidReason: reason.trim() });
+    dispatch({ type: 'ADD_TICKET', jobId: job.id, pkgId: pkg.id, ticket: revisedTicket });
+    navigate('ticket-editor', { jobId: job.id, pkgId: pkg.id, ticketId: revisedTicket.id });
+  }
+
+  // Available only when viewing an already-voided ticket that was NOT created via
+  // "Void & Create Revision" — lets the PM create a revision later if it turns
+  // out one is needed after all.
+  function createRevisionLater() {
+    const alreadyHasRevision = pkg.tickets.some(t => t.revisionOf === ticket.id);
+    if (alreadyHasRevision) { alert('A revision already exists for this ticket.'); return; }
+    const ok = window.confirm('Create a revision of this voided ticket now?');
+    if (!ok) return;
+    const baseNum = ticket.num.replace(/\s+Rev\s+\d+$/i, '');
+    const nextRevNum = (ticket.revisionNum || 0) + 1;
+    const revisedTicket = {
+      ...ticket,
+      id: genId(),
+      num: `${baseNum} Rev ${nextRevNum}`,
+      status: 'draft',
+      revisionOf: ticket.revisionOf || ticket.id,
+      revisionNum: nextRevNum,
+      foremanSignedAt: null,
+      superSignedAt: null,
+      docusignEnvelopeId: null,
+      voidedAt: null,
+      voidReason: null
+    };
+    dispatch({ type: 'ADD_TICKET', jobId: job.id, pkgId: pkg.id, ticket: revisedTicket });
+    navigate('ticket-editor', { jobId: job.id, pkgId: pkg.id, ticketId: revisedTicket.id });
   }
 
   // Total hours summary for display
@@ -493,8 +577,8 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
         <div className="sec-hdr" style={{ borderTop: 'none', paddingTop: 0, marginTop: 0 }}>
           <div className="sec-icon sec-icon-material"><i className="ti ti-package" /></div>
           <div>
-            <div className="sec-title">Materials</div>
-            <div className="sec-sub">Describe materials used and attach receipts — pricing added by PM</div>
+            <div className="sec-title">Material &amp; Other Expenses</div>
+            <div className="sec-sub">Materials, per diem, lodging, fuel, or other reimbursable expenses — attach receipts; pricing added by PM</div>
           </div>
         </div>
         <div className="tbl-wrap">
@@ -620,8 +704,8 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
               : <div style={{ color: '#bbb', fontStyle: 'italic' }}>Not yet signed</div>}
           </div>
           <div style={{ textAlign: 'right' }}>
-            <span className={`badge ${['signed', 'approved'].includes(ticket.status) ? 'badge-success' : 'badge-warning'}`}>
-              {['signed', 'approved'].includes(ticket.status) ? 'Signed' : 'Signs first'}
+            <span className={`badge ${ticket.foremanSignedAt ? 'badge-success' : 'badge-warning'}`}>
+              {ticket.foremanSignedAt ? 'Signed' : 'Signs first'}
             </span>
           </div>
         </div>
@@ -649,26 +733,60 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
               : <div style={{ color: '#bbb', fontStyle: 'italic' }}>Not yet signed</div>}
           </div>
           <div style={{ textAlign: 'right' }}>
-            <span className="badge badge-gray">After foreman</span>
+            <span className={`badge ${ticket.superSignedAt ? 'badge-success' : 'badge-gray'}`}>
+              {ticket.superSignedAt ? 'Signed' : 'After foreman'}
+            </span>
           </div>
         </div>
 
-        {!isReadOnly && (
+        {ticket.status === 'void' && (
+          <Notice type="warn">
+            This ticket was voided{ticket.voidedAt ? ' on ' + ticket.voidedAt : ''}.
+            {ticket.voidReason && <><br /><strong>Reason:</strong> {ticket.voidReason}</>}
+            {pkg.tickets.some(t => t.revisionOf === ticket.id)
+              ? <><br />See its revision below for the corrected version.</>
+              : ''}
+          </Notice>
+        )}
+
+        {ticket.status === 'draft' && (
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
             <button className="btn" onClick={() => navigate('package-detail', { jobId: job.id, pkgId: pkg.id })}>Cancel</button>
             <button className="btn" onClick={saveDraft}><i className="ti ti-device-floppy" /> Save draft</button>
             <button className="btn btn-primary" onClick={submitForSig}><i className="ti ti-send" /> Submit for signature</button>
           </div>
         )}
-        {ticket.status === 'pending-sig' && (
+
+        {ticket.status === 'awaiting-foreman-sig' && (
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
             <button className="btn" onClick={() => navigate('package-detail', { jobId: job.id, pkgId: pkg.id })}>Back</button>
-            <button className="btn btn-primary" onClick={markSigned}><i className="ti ti-check" /> Mark as signed</button>
+            <button className="btn btn-danger" onClick={voidToDraft}><i className="ti ti-ban" /> Void</button>
+            <button className="btn btn-primary" onClick={recordForemanSignature}><i className="ti ti-signature" /> Record Foreman Signature</button>
           </div>
         )}
-        {isReadOnly && ticket.status !== 'pending-sig' && (
+
+        {ticket.status === 'awaiting-super-sig' && (
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+            <button className="btn" onClick={() => navigate('package-detail', { jobId: job.id, pkgId: pkg.id })}>Back</button>
+            <button className="btn btn-danger" onClick={voidToDraft}><i className="ti ti-ban" /> Void</button>
+            <button className="btn btn-primary" onClick={recordSuperSignature}><i className="ti ti-signature" /> Record Super Signature</button>
+          </div>
+        )}
+
+        {ticket.status === 'executed' && (
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
             <button className="btn" onClick={() => navigate('package-detail', { jobId: job.id, pkgId: pkg.id })}>Back to package</button>
+            <button className="btn btn-danger" onClick={voidExecuted}><i className="ti ti-ban" /> Void</button>
+            <button className="btn btn-danger" onClick={voidAndCreateRevision}><i className="ti ti-edit" /> Void &amp; Create Revision</button>
+          </div>
+        )}
+
+        {ticket.status === 'void' && (
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+            <button className="btn" onClick={() => navigate('package-detail', { jobId: job.id, pkgId: pkg.id })}>Back to package</button>
+            {!pkg.tickets.some(t => t.revisionOf === ticket.id) && (
+              <button className="btn btn-primary" onClick={createRevisionLater}><i className="ti ti-edit" /> Create Revision</button>
+            )}
           </div>
         )}
       </div>

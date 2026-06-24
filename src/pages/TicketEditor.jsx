@@ -701,7 +701,7 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
                 setField('foremanName', m ? m.name : '');
               }}>
               <option value="">— Select foreman —</option>
-              {(job.members || []).filter(m => m.role === 'foreman').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              {(job.members || []).filter(m => m.sourceType === 'internal').map(m => <option key={m.id} value={m.id}>{m.name}{m.title ? ' (' + m.title + ')' : ''}</option>)}
             </select>
           </div>
           <div style={{ fontSize: 11, color: '#888' }}>

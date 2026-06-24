@@ -4,21 +4,57 @@ import React, { createContext, useContext, useReducer } from 'react';
 const initialState = {
   currentJobId: null,
   recentJobIds: [],
+
+  profile: { name: 'Granite Peak Contracting', address: '14 Industrial Park Rd', city: 'Plattsburgh, NY 12901', phone: '(518) 555-7700', logo: null },
+
+  internalTeam: [
+    { id: 'it1', first: 'Chris', last: 'Ruggles', email: 'cruggles@granitepeak.com', phone: '(518) 555-2210', role: 'pm', inviteStatus: 'not-sent' },
+    { id: 'it2', first: 'Dana', last: 'Whitfield', email: 'dwhitfield@granitepeak.com', phone: '(518) 555-2211', role: 'pm', inviteStatus: 'not-sent' },
+    { id: 'it3', first: 'Mike', last: 'Donovan', email: 'mdonovan@granitepeak.com', phone: '(518) 555-2212', role: 'foreman', inviteStatus: 'not-sent' },
+    { id: 'it4', first: 'Tony', last: 'Marchetti', email: 'tmarchetti@granitepeak.com', phone: '(518) 555-2213', role: 'foreman', inviteStatus: 'not-sent' }
+  ],
+
+  classifications: [
+    { id: 'c1', name: 'Foreman', regRate: 48.50, otRate: 72.75, dtRate: 97.00 },
+    { id: 'c2', name: 'Carpenter', regRate: 38.00, otRate: 57.00, dtRate: 76.00 },
+    { id: 'c3', name: 'Laborer', regRate: 32.00, otRate: 48.00, dtRate: 64.00 }
+  ],
+  personnelRoster: [
+    { id: 'w1', first: 'Mike', last: 'Donovan', classId: 'c1' },
+    { id: 'w2', first: 'Tony', last: 'Marchetti', classId: 'c1' },
+    { id: 'w3', first: 'Dave', last: 'Sullivan', classId: 'c2' },
+    { id: 'w4', first: 'Jake', last: 'Whitford', classId: 'c2' },
+    { id: 'w5', first: 'Carlos', last: 'Mendez', classId: 'c2' },
+    { id: 'w6', first: 'Brian', last: 'Foley', classId: 'c2' },
+    { id: 'w7', first: 'Tyler', last: 'Brooks', classId: 'c2' },
+    { id: 'w8', first: 'Sean', last: 'Murphy', classId: 'c3' },
+    { id: 'w9', first: 'Adam', last: 'Lefebvre', classId: 'c3' },
+    { id: 'w10', first: 'Marcus', last: 'Webb', classId: 'c3' }
+  ],
+
+  gcCompanies: [
+    { id: 'gc1', name: 'BBL Construction Services, LLC', phone: '(518) 555-3300', email: 'info@bblcs.com', address: '100 Construction Way, Albany, NY 12205' },
+    { id: 'gc2', name: 'Hayner Hoyt Corporation', phone: '(315) 555-4400', email: 'info@haynerhoyt.com', address: '601 South Crouse Ave, Syracuse, NY 13210' },
+    { id: 'gc3', name: 'Christa Construction LLC', phone: '(585) 555-5500', email: 'info@christabuilds.com', address: '5500 Main St, Williamsville, NY 14221' }
+  ],
+  gcSupers: [
+    { id: 'gs1', gcCompanyId: 'gc1', first: 'Scott', last: 'Hamilton', email: 'shamilton@bblcs.com', phone: '(518) 555-3301' },
+    { id: 'gs2', gcCompanyId: 'gc1', first: 'Paul', last: 'Wilson', email: 'pwilson@bblcs.com', phone: '(518) 555-3302' },
+    { id: 'gs3', gcCompanyId: 'gc2', first: 'Karen', last: 'Boyce', email: 'kboyce@haynerhoyt.com', phone: '(315) 555-4401' },
+    { id: 'gs4', gcCompanyId: 'gc2', first: 'Rick', last: 'Delgado', email: 'rdelgado@haynerhoyt.com', phone: '(315) 555-4402' },
+    { id: 'gs5', gcCompanyId: 'gc3', first: 'Wendy', last: 'Tran', email: 'wtran@christabuilds.com', phone: '(585) 555-5501' },
+    { id: 'gs6', gcCompanyId: 'gc3', first: 'Greg', last: 'Palumbo', email: 'gpalumbo@christabuilds.com', phone: '(585) 555-5502' }
+  ],
+
   jobs: [
     {
       id: 'j1', num: '241026', name: 'BOCES - Plattsburgh', address: '32 Bow Arrow Point Drive', city: 'Plattsburgh', state: 'NY', zip: '12901',
       gc: 'BBL Construction Services, LLC', owner: 'CIDC, Inc.', ae: 'WCGS / Huston',
-      supers: [],
-      classifications: [
-        { id: 'c1', name: 'Foreman', regRate: 48.50, otRate: 72.75, dtRate: 97.00 },
-        { id: 'c2', name: 'Carpenter', regRate: 38.00, otRate: 57.00, dtRate: 76.00 },
-        { id: 'c3', name: 'Laborer', regRate: 32.00, otRate: 48.00, dtRate: 64.00 }
-      ],
-      workers: [{ id: 'w1', first: 'Mike', last: 'Donovan', classId: 'c1' }, { id: 'w2', first: 'Tony', last: 'Marchetti', classId: 'c1' }, { id: 'w3', first: 'Dave', last: 'Sullivan', classId: 'c2' }, { id: 'w4', first: 'Jake', last: 'Whitford', classId: 'c2' }, { id: 'w5', first: 'Carlos', last: 'Mendez', classId: 'c2' }, { id: 'w6', first: 'Brian', last: 'Foley', classId: 'c2' }, { id: 'w7', first: 'Tyler', last: 'Brooks', classId: 'c2' }, { id: 'w8', first: 'Sean', last: 'Murphy', classId: 'c3' }, { id: 'w9', first: 'Adam', last: 'Lefebvre', classId: 'c3' }, { id: 'w10', first: 'Marcus', last: 'Webb', classId: 'c3' }],
+      removedRosterIds: [],
       members: [
-        { id: 'jm1', contactId: 'ct1', name: 'Chris Ruggles', email: 'cruggles@adirondackconstruction.com', phone: '(518) 555-2210', role: 'pm', inviteSent: false, inviteStatus: 'not-sent' },
-        { id: 'jm2', contactId: 'ct2', name: 'Scott Hamilton', email: 'shamilton@bblcs.com', phone: '(518) 555-3301', role: 'super', inviteSent: false, inviteStatus: 'not-sent' },
-        { id: 'jm3', contactId: 'ct3', name: 'Paul Wilson', email: 'pwilson@bblcs.com', phone: '(518) 555-3302', role: 'super', inviteSent: false, inviteStatus: 'not-sent' }
+        { id: 'jm1', sourceType: 'internal', sourceId: 'it1', name: 'Chris Ruggles', email: 'cruggles@granitepeak.com', phone: '(518) 555-2210', role: 'pm', permission: 'full', inviteSent: false, inviteStatus: 'not-sent' },
+        { id: 'jm2', sourceType: 'gc', sourceId: 'gs1', name: 'Scott Hamilton', email: 'shamilton@bblcs.com', phone: '(518) 555-3301', role: 'super' },
+        { id: 'jm3', sourceType: 'gc', sourceId: 'gs2', name: 'Paul Wilson', email: 'pwilson@bblcs.com', phone: '(518) 555-3302', role: 'super' }
       ],
       packages: [
         { id: 'p1', num: 'TM-001', numSystem: 'TM-{seq}', title: 'FRP Furnish and Install in the CTE Building', authType: 'Change Event', authRef: 'CE-003', authFileName: null, prepSettings: null, pkgStatus: 'open',
@@ -26,19 +62,7 @@ const initialState = {
         }
       ]
     }
-  ],
-  directory: {
-    companies: [
-      { id: 'co1', name: 'BBL Construction Services, LLC', phone: '(518) 555-3300', email: 'info@bblcs.com', address: '100 Construction Way, Albany, NY 12205' },
-      { id: 'co2', name: 'Adirondack Construction', phone: '(518) 555-2200', email: 'info@adirondackconstruction.com', address: '45 North Way, Plattsburgh, NY 12901' }
-    ],
-    contacts: [
-      { id: 'ct1', companyId: 'co2', first: 'Chris', last: 'Ruggles', title: 'Project Manager', phone: '(518) 555-2210', email: 'cruggles@adirondackconstruction.com' },
-      { id: 'ct2', companyId: 'co1', first: 'Scott', last: 'Hamilton', title: 'Superintendent', phone: '(518) 555-3301', email: 'shamilton@bblcs.com' },
-      { id: 'ct3', companyId: 'co1', first: 'Paul', last: 'Wilson', title: 'Superintendent', phone: '(518) 555-3302', email: 'pwilson@bblcs.com' }
-    ]
-  },
-  profile: { name: 'Your Company Name', address: '123 Main Street', city: 'City, State 00000', phone: '(555) 000-0000', logo: null }
+  ]
 };
 
 function reducer(state, action) {
@@ -47,29 +71,39 @@ function reducer(state, action) {
     case 'ADD_JOB': return { ...state, jobs: [...state.jobs, action.job] };
     case 'UPDATE_JOB': return { ...state, jobs: state.jobs.map(j => j.id === action.id ? { ...j, ...action.data } : j) };
     case 'DELETE_JOB': return { ...state, jobs: state.jobs.filter(j => j.id !== action.id) };
-    case 'ADD_SUPER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, supers: [...j.supers, action.sup] } : j) };
-    case 'REMOVE_SUPER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, supers: j.supers.filter(s => s.id !== action.supId) } : j) };
-    case 'ADD_CLS': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, classifications: [...j.classifications, action.cls] } : j) };
-    case 'UPDATE_CLS': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, classifications: j.classifications.map(c => c.id === action.cls.id ? action.cls : c) } : j) };
-    case 'REMOVE_CLS': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, classifications: j.classifications.filter(c => c.id !== action.clsId) } : j) };
-    case 'ADD_WORKER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, workers: [...j.workers, action.worker] } : j) };
-    case 'UPDATE_WORKER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, workers: j.workers.map(w => w.id === action.worker.id ? action.worker : w) } : j) };
-    case 'REMOVE_WORKER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, workers: j.workers.filter(w => w.id !== action.workerId) } : j) };
+
+    case 'ADD_INTERNAL_TEAM_MEMBER': return { ...state, internalTeam: [...state.internalTeam, action.member] };
+    case 'UPDATE_INTERNAL_TEAM_MEMBER': return { ...state, internalTeam: state.internalTeam.map(m => m.id === action.member.id ? action.member : m) };
+    case 'REMOVE_INTERNAL_TEAM_MEMBER': return { ...state, internalTeam: state.internalTeam.filter(m => m.id !== action.id) };
+
+    case 'ADD_CLS': return { ...state, classifications: [...state.classifications, action.cls] };
+    case 'UPDATE_CLS': return { ...state, classifications: state.classifications.map(c => c.id === action.cls.id ? action.cls : c) };
+    case 'REMOVE_CLS': return { ...state, classifications: state.classifications.filter(c => c.id !== action.clsId) };
+    case 'ADD_WORKER': return { ...state, personnelRoster: [...state.personnelRoster, action.worker] };
+    case 'UPDATE_WORKER': return { ...state, personnelRoster: state.personnelRoster.map(w => w.id === action.worker.id ? action.worker : w) };
+    case 'REMOVE_WORKER': return { ...state, personnelRoster: state.personnelRoster.filter(w => w.id !== action.workerId) };
+
+    case 'REMOVE_ROSTER_FROM_JOB': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, removedRosterIds: [...(j.removedRosterIds || []), action.workerId] } : j) };
+    case 'RESTORE_ROSTER_TO_JOB': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, removedRosterIds: (j.removedRosterIds || []).filter(id => id !== action.workerId) } : j) };
+
+    case 'ADD_GC_COMPANY': return { ...state, gcCompanies: [...state.gcCompanies, action.company] };
+    case 'UPDATE_GC_COMPANY': return { ...state, gcCompanies: state.gcCompanies.map(c => c.id === action.company.id ? action.company : c) };
+    case 'DELETE_GC_COMPANY': return { ...state, gcCompanies: state.gcCompanies.filter(c => c.id !== action.id), gcSupers: state.gcSupers.filter(s => s.gcCompanyId !== action.id) };
+    case 'ADD_GC_SUPER': return { ...state, gcSupers: [...state.gcSupers, action.super] };
+    case 'UPDATE_GC_SUPER': return { ...state, gcSupers: state.gcSupers.map(s => s.id === action.super.id ? action.super : s) };
+    case 'DELETE_GC_SUPER': return { ...state, gcSupers: state.gcSupers.filter(s => s.id !== action.id) };
+
     case 'ADD_JOB_MEMBER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, members: [...(j.members || []), action.member] } : j) };
     case 'UPDATE_JOB_MEMBER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, members: (j.members || []).map(m => m.id === action.memberId ? { ...m, ...action.data } : m) } : j) };
     case 'REMOVE_JOB_MEMBER': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, members: (j.members || []).filter(m => m.id !== action.memberId) } : j) };
+
     case 'ADD_PKG': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, packages: [...j.packages, action.pkg] } : j) };
     case 'UPDATE_PKG': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, packages: j.packages.map(p => p.id === action.pkgId ? { ...p, ...action.data } : p) } : j) };
     case 'DELETE_PKG': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, packages: j.packages.filter(p => p.id !== action.pkgId) } : j) };
     case 'ADD_TICKET': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, packages: j.packages.map(p => p.id === action.pkgId ? { ...p, tickets: [...p.tickets, action.ticket] } : p) } : j) };
     case 'UPDATE_TICKET': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, packages: j.packages.map(p => p.id === action.pkgId ? { ...p, tickets: p.tickets.map(t => t.id === action.ticketId ? { ...t, ...action.data } : t) } : p) } : j) };
     case 'DELETE_TICKET': return { ...state, jobs: state.jobs.map(j => j.id === action.jobId ? { ...j, packages: j.packages.map(p => p.id === action.pkgId ? { ...p, tickets: p.tickets.filter(t => t.id !== action.ticketId) } : p) } : j) };
-    case 'ADD_COMPANY': return { ...state, directory: { ...state.directory, companies: [...state.directory.companies, action.company] } };
-    case 'UPDATE_COMPANY': return { ...state, directory: { ...state.directory, companies: state.directory.companies.map(c => c.id === action.company.id ? action.company : c) } };
-    case 'DELETE_COMPANY': return { ...state, directory: { ...state.directory, companies: state.directory.companies.filter(c => c.id !== action.id), contacts: state.directory.contacts.filter(c => c.companyId !== action.id) } };
-    case 'ADD_CONTACT': return { ...state, directory: { ...state.directory, contacts: [...state.directory.contacts, action.contact] } };
-    case 'UPDATE_CONTACT': return { ...state, directory: { ...state.directory, contacts: state.directory.contacts.map(c => c.id === action.contact.id ? action.contact : c) } };
-    case 'DELETE_CONTACT': return { ...state, directory: { ...state.directory, contacts: state.directory.contacts.filter(c => c.id !== action.id) } };
+
     default: return state;
   }
 }

@@ -50,6 +50,7 @@ export function calcPackageTotalsWithOhp(pkg, prepSettings) {
   let vendorBase = 0;
 
   (pkg.tickets || []).forEach(t => {
+    if (t.status === 'void') return; // voided tickets never count toward totals
     const tots = calcTicketTotals(t);
     laborBase += tots.laborBase;
     matBase += tots.matBase;
@@ -73,9 +74,10 @@ export function calcPackageTotals(pkg) {
   let grand = 0;
   let executed = 0;
   (pkg.tickets || []).forEach(t => {
+    if (t.status === 'void') return; // voided tickets never count toward totals
     const tots = calcTicketTotals(t);
     grand += tots.grand;
-    if (['signed', 'submitted', 'approved'].includes(t.status)) {
+    if (t.status === 'executed') {
       executed += tots.grand;
     }
   });
@@ -96,10 +98,9 @@ export function pkgStatusInfo(pkg) {
 export function ticketStatusInfo(status) {
   const map = {
     draft: { label: 'Draft', cls: 'badge-gray' },
-    'pending-sig': { label: 'Awaiting sig', cls: 'badge-warning' },
-    signed: { label: 'Signed', cls: 'badge-success' },
-    submitted: { label: 'Submitted', cls: 'badge-info' },
-    approved: { label: 'Approved', cls: 'badge-success' },
+    'awaiting-foreman-sig': { label: 'Awaiting Foreman Signature', cls: 'badge-warning' },
+    'awaiting-super-sig': { label: 'Awaiting Super Signature', cls: 'badge-info' },
+    executed: { label: 'Executed', cls: 'badge-success' },
     void: { label: 'Void', cls: 'badge-red' }
   };
   return map[status] || { label: status, cls: 'badge-gray' };
@@ -110,6 +111,8 @@ export function buildPkgNum(numSystem, pkgSeq) {
     .replace('{seq}', String(pkgSeq).padStart(3, '0'))
     .replace('{year}', new Date().getFullYear());
 }
+
+
 
 export const AUTH_TYPES = [
   'Authorization Email',

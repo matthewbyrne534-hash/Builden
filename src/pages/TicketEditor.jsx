@@ -405,7 +405,9 @@ export default function TicketEditor({ jobId, pkgId, ticketId, navigate }) {
   function voidToDraft() {
     const ok = window.confirm('This will bring the ticket back to draft mode. Are you sure you want to void?');
     if (!ok) return;
-    saveToStore('draft', { foremanSignedAt: null, superSignedAt: null });
+    const data = { ...ticket, status: 'draft', foremanSignedAt: null, superSignedAt: null };
+    setTicket(data);
+    dispatch({ type: 'UPDATE_TICKET', jobId: job.id, pkgId: pkg.id, ticketId: ticket.id, data });
   }
 
   // VOID — used on an EXECUTED ticket.

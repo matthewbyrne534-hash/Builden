@@ -3,6 +3,7 @@ import React, { createContext, useContext, useReducer } from 'react';
 import { useEffect } from 'react';
 import { fetchInternalTeam, fetchInternalRoles, addInternalTeamMember, updateInternalTeamMember, removeInternalTeamMember, addInternalRole } from './internalTeamApi';
 import { fetchClassifications, fetchPersonnelRoster, addClassification, updateClassification, removeClassification, addWorker, updateWorker, removeWorker } from './personnelRosterApi';
+import { fetchGcCompanies, fetchGcSupers, addGcCompany, updateGcCompany, deleteGcCompany, addGcSuper, updateGcSuper, deleteGcSuper } from './gcDirectoryApi';
 
 const initialState = {
   currentJobId: null,
@@ -19,19 +20,8 @@ const initialState = {
   classifications: [],
   personnelRoster: [],
 
-  gcCompanies: [
-    { id: 'gc1', name: 'BBL Construction Services, LLC', phone: '(518) 555-3300', email: 'info@bblcs.com', address: '100 Construction Way, Albany, NY 12205' },
-    { id: 'gc2', name: 'Hayner Hoyt Corporation', phone: '(315) 555-4400', email: 'info@haynerhoyt.com', address: '601 South Crouse Ave, Syracuse, NY 13210' },
-    { id: 'gc3', name: 'Christa Construction LLC', phone: '(585) 555-5500', email: 'info@christabuilds.com', address: '5500 Main St, Williamsville, NY 14221' }
-  ],
-  gcSupers: [
-    { id: 'gs1', gcCompanyId: 'gc1', first: 'Scott', last: 'Hamilton', email: 'shamilton@bblcs.com', phone: '(518) 555-3301' },
-    { id: 'gs2', gcCompanyId: 'gc1', first: 'Paul', last: 'Wilson', email: 'pwilson@bblcs.com', phone: '(518) 555-3302' },
-    { id: 'gs3', gcCompanyId: 'gc2', first: 'Karen', last: 'Boyce', email: 'kboyce@haynerhoyt.com', phone: '(315) 555-4401' },
-    { id: 'gs4', gcCompanyId: 'gc2', first: 'Rick', last: 'Delgado', email: 'rdelgado@haynerhoyt.com', phone: '(315) 555-4402' },
-    { id: 'gs5', gcCompanyId: 'gc3', first: 'Wendy', last: 'Tran', email: 'wtran@christabuilds.com', phone: '(585) 555-5501' },
-    { id: 'gs6', gcCompanyId: 'gc3', first: 'Greg', last: 'Palumbo', email: 'gpalumbo@christabuilds.com', phone: '(585) 555-5502' }
-  ],
+  gcCompanies: [],
+  gcSupers: [],
 
   jobs: [
     {
@@ -115,7 +105,8 @@ const Ctx = createContext(null);
 export function StoreProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  // On first load, pull Internal Team and Personnel Roster data from Firestore instead of starting empty forever
+  // On first load, pull Internal Team, Personnel Roster, and GC Directory data from Firestore
+  // instead of starting empty forever
   useEffect(() => {
     fetchInternalTeam().then(team => {
       team.forEach(member => dispatch({ type: 'ADD_INTERNAL_TEAM_MEMBER', member }));
@@ -128,6 +119,12 @@ export function StoreProvider({ children }) {
     });
     fetchPersonnelRoster().then(workers => {
       workers.forEach(worker => dispatch({ type: 'ADD_WORKER', worker }));
+    });
+    fetchGcCompanies().then(companies => {
+      companies.forEach(company => dispatch({ type: 'ADD_GC_COMPANY', company }));
+    });
+    fetchGcSupers().then(supers => {
+      supers.forEach(sup => dispatch({ type: 'ADD_GC_SUPER', super: sup }));
     });
   }, []);
 
@@ -145,6 +142,13 @@ export function StoreProvider({ children }) {
     if (action.type === 'ADD_WORKER') addWorker(action.worker);
     if (action.type === 'UPDATE_WORKER') updateWorker(action.worker);
     if (action.type === 'REMOVE_WORKER') removeWorker(action.workerId);
+
+    if (action.type === 'ADD_GC_COMPANY') addGcCompany(action.company);
+    if (action.type === 'UPDATE_GC_COMPANY') updateGcCompany(action.company);
+    if (action.type === 'DELETE_GC_COMPANY') deleteGcCompany(action.id);
+    if (action.type === 'ADD_GC_SUPER') addGcSuper(action.super);
+    if (action.type === 'UPDATE_GC_SUPER') updateGcSuper(action.super);
+    if (action.type === 'DELETE_GC_SUPER') deleteGcSuper(action.id);
   }
 
   return <Ctx.Provider value={{ state, dispatch: dispatchAndSync }}>{children}</Ctx.Provider>;

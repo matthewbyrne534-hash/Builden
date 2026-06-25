@@ -324,38 +324,41 @@ function GcDirectorySection() {
   const filteredCompanies = state.gcCompanies.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
   const companySupers = selectedCompany ? state.gcSupers.filter(s => s.gcCompanyId === selectedCompany.id) : [];
 
-  function SuperFormFields() {
-    return (
-      <>
-        <div className="form-grid form-grid-2">
-          <FormGroup label="First name *"><Input value={superForm.first} onChange={v => setSuperForm(f => ({ ...f, first: v }))} /></FormGroup>
-          <FormGroup label="Last name *"><Input value={superForm.last} onChange={v => setSuperForm(f => ({ ...f, last: v }))} /></FormGroup>
-          <FormGroup label="Phone"><Input value={superForm.phone} onChange={v => setSuperForm(f => ({ ...f, phone: formatPhone(v) }))} placeholder="(555) 000-0000" /></FormGroup>
-          <FormGroup label="Email *"><Input value={superForm.email} onChange={v => setSuperForm(f => ({ ...f, email: v }))} placeholder="name@gc.com" /></FormGroup>
-        </div>
-        {!editSuper && (
-          <FormGroup label="GC Company *">
-            <select className="form-input" value={showInlineCompany ? 'not-listed' : superForm.gcCompanyId} onChange={e => handleCompanySelect(e.target.value)}>
-              <option value="">- Select GC company -</option>
-              {state.gcCompanies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              <option value="not-listed">+ Company not listed - add new</option>
-            </select>
-          </FormGroup>
-        )}
-        {showInlineCompany && (
-          <div style={{ marginTop: 12, padding: '14px 16px', background: '#f8fbff', border: '1px solid #C5DEFA', borderRadius: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#185FA5', marginBottom: 12 }}><i className="ti ti-building" /> New GC company details</div>
-            <div className="form-grid form-grid-2">
-              <FormGroup label="Company name *" span="2"><Input value={inlineCompanyForm.name} onChange={v => setInlineCompanyForm(f => ({ ...f, name: v }))} placeholder="e.g. BBL Construction Services" /></FormGroup>
-              <FormGroup label="Phone"><Input value={inlineCompanyForm.phone} onChange={v => setInlineCompanyForm(f => ({ ...f, phone: formatPhone(v) }))} placeholder="(555) 000-0000" /></FormGroup>
-              <FormGroup label="Email"><Input value={inlineCompanyForm.email} onChange={v => setInlineCompanyForm(f => ({ ...f, email: v }))} /></FormGroup>
-              <FormGroup label="Address" span="2"><Input value={inlineCompanyForm.address} onChange={v => setInlineCompanyForm(f => ({ ...f, address: v }))} placeholder="Street, City, State ZIP" /></FormGroup>
-            </div>
+  // NOTE: this used to be a function component (`function SuperFormFields() {...}`) defined
+  // right here inside GcDirectorySection. That meant React saw a brand-new component type
+  // on every render (i.e. every keystroke), so it threw away the old <input> and mounted a
+  // fresh one each time — which kicked the cursor out after every letter typed.
+  // Turning it into a plain JSX variable fixes that, since it's no longer a separate component.
+  const superFormFields = (
+    <>
+      <div className="form-grid form-grid-2">
+        <FormGroup label="First name *"><Input value={superForm.first} onChange={v => setSuperForm(f => ({ ...f, first: v }))} /></FormGroup>
+        <FormGroup label="Last name *"><Input value={superForm.last} onChange={v => setSuperForm(f => ({ ...f, last: v }))} /></FormGroup>
+        <FormGroup label="Phone"><Input value={superForm.phone} onChange={v => setSuperForm(f => ({ ...f, phone: formatPhone(v) }))} placeholder="(555) 000-0000" /></FormGroup>
+        <FormGroup label="Email *"><Input value={superForm.email} onChange={v => setSuperForm(f => ({ ...f, email: v }))} placeholder="name@gc.com" /></FormGroup>
+      </div>
+      {!editSuper && (
+        <FormGroup label="GC Company *">
+          <select className="form-input" value={showInlineCompany ? 'not-listed' : superForm.gcCompanyId} onChange={e => handleCompanySelect(e.target.value)}>
+            <option value="">- Select GC company -</option>
+            {state.gcCompanies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            <option value="not-listed">+ Company not listed - add new</option>
+          </select>
+        </FormGroup>
+      )}
+      {showInlineCompany && (
+        <div style={{ marginTop: 12, padding: '14px 16px', background: '#f8fbff', border: '1px solid #C5DEFA', borderRadius: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#185FA5', marginBottom: 12 }}><i className="ti ti-building" /> New GC company details</div>
+          <div className="form-grid form-grid-2">
+            <FormGroup label="Company name *" span="2"><Input value={inlineCompanyForm.name} onChange={v => setInlineCompanyForm(f => ({ ...f, name: v }))} placeholder="e.g. BBL Construction Services" /></FormGroup>
+            <FormGroup label="Phone"><Input value={inlineCompanyForm.phone} onChange={v => setInlineCompanyForm(f => ({ ...f, phone: formatPhone(v) }))} placeholder="(555) 000-0000" /></FormGroup>
+            <FormGroup label="Email"><Input value={inlineCompanyForm.email} onChange={v => setInlineCompanyForm(f => ({ ...f, email: v }))} /></FormGroup>
+            <FormGroup label="Address" span="2"><Input value={inlineCompanyForm.address} onChange={v => setInlineCompanyForm(f => ({ ...f, address: v }))} placeholder="Street, City, State ZIP" /></FormGroup>
           </div>
-        )}
-      </>
-    );
-  }
+        </div>
+      )}
+    </>
+  );
 
   if (selectedCompany) {
     const co = state.gcCompanies.find(c => c.id === selectedCompany.id) || selectedCompany;
@@ -417,7 +420,7 @@ function GcDirectorySection() {
         </Modal>
         <Modal open={showSuperModal} onClose={() => setShowSuperModal(false)} title={editSuper ? 'Edit Superintendent' : 'Add Superintendent'}
           footer={<><button className="btn" onClick={() => setShowSuperModal(false)}>Cancel</button><button className="btn btn-primary" onClick={saveSuper}>Save</button></>}>
-          <SuperFormFields />
+          {superFormFields}
         </Modal>
       </div>
     );
@@ -487,7 +490,7 @@ function GcDirectorySection() {
 
       <Modal open={showSuperModal} onClose={() => setShowSuperModal(false)} title={editSuper ? 'Edit Superintendent' : 'Add Superintendent'}
         footer={<><button className="btn" onClick={() => setShowSuperModal(false)}>Cancel</button><button className="btn btn-primary" onClick={saveSuper}>Save superintendent</button></>}>
-        <SuperFormFields />
+        {superFormFields}
       </Modal>
     </div>
   );

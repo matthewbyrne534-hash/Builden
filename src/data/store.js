@@ -1,5 +1,7 @@
 // src/data/store.js
 import React, { createContext, useContext, useReducer } from 'react';
+import { useEffect } from 'react';
+import { fetchInternalTeam, fetchInternalRoles, addInternalTeamMember, updateInternalTeamMember, removeInternalTeamMember, addInternalRole } from './internalTeamApi';
 
 const initialState = {
   currentJobId: null,
@@ -9,14 +11,9 @@ const initialState = {
 
   // Company-wide list of role TITLES used across the Internal Team — grows organically,
   // same picker pattern as labor classifications and materials (type new, or pick existing).
-  internalRoles: ['Project Manager', 'Foreman'],
+  internalRoles: [],
 
-  internalTeam: [
-    { id: 'it1', first: 'Chris', last: 'Ruggles', email: 'cruggles@granitepeak.com', phone: '(518) 555-2210', role: 'Project Manager' },
-    { id: 'it2', first: 'Dana', last: 'Whitfield', email: 'dwhitfield@granitepeak.com', phone: '(518) 555-2211', role: 'Project Manager' },
-    { id: 'it3', first: 'Mike', last: 'Donovan', email: 'mdonovan@granitepeak.com', phone: '(518) 555-2212', role: 'Foreman' },
-    { id: 'it4', first: 'Tony', last: 'Marchetti', email: 'tmarchetti@granitepeak.com', phone: '(518) 555-2213', role: 'Foreman' }
-  ],
+  internalTeam: [],
 
   classifications: [
     { id: 'c1', name: 'Foreman' },
@@ -131,6 +128,26 @@ function reducer(state, action) {
 const Ctx = createContext(null);
 export function StoreProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
-  return <Ctx.Provider value={{ state, dispatch }}>{children}</Ctx.Provider>;
+
+  // On first load, pull Internal Team data from Firestore instead of starting empty forever
+  useEffect(() => {
+    fetchInternalTeam().then(team => {
+      team.forEach(member => dispatch({ type: 'ADD_INTERNAL_TEAM_MEMBER', member }));
+    });
+    fetchInternalRoles().then(roles => {
+      roles.forEach(role => dispatch({ type: 'ADD_INTERNAL_ROLE', role }));
+    });
+  }, []);
+
+  // Wrap dispatch so Internal Team actions also write through to Firestore
+  function dispatchAndSync(action) {
+    dispatch(action);
+    if (action.type === 'ADD_INTERNAL_TEAM_MEMBER') addInternalTeamMember(action.member);
+    if (action.type === 'UPDATE_INTERNAL_TEAM_MEMBER') updateInternalTeamMember(action.member);
+    if (action.type === 'REMOVE_INTERNAL_TEAM_MEMBER') removeInternalTeamMember(action.id);
+    if (action.type === 'ADD_INTERNAL_ROLE') addInternalRole(action.role);
+  }
+
+  return <Ctx.Provider value={{ state, dispatch: dispatchAndSync }}>{children}</Ctx.Provider>;
 }
-export function useStore() { return useContext(Ctx); }
+export function useStore() { return useContext(Ctx); } useStore() { return useContext(Ctx); }

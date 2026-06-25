@@ -1,6 +1,8 @@
 // src/App.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { StoreProvider, useStore } from './data/store';
+import { AuthProvider, useAuth } from './data/auth';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import JobDetail from './pages/JobDetail';
 import JobSetup from './pages/JobSetup';
@@ -11,6 +13,7 @@ import Directory from './pages/Directory';
 
 function AppInner() {
   const { state, dispatch } = useStore();
+  const { logout } = useAuth();
   const [page, setPage] = useState('dashboard');
   const [params, setParams] = useState({});
   const [showJobSwitcher, setShowJobSwitcher] = useState(false);
@@ -164,7 +167,11 @@ function AppInner() {
           </div>
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#EBF3FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#185FA5', flexShrink: 0 }}>JS</div>
+            <div style={{ position: 'relative' }}>
+              <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#EBF3FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#185FA5', flexShrink: 0, cursor: 'pointer' }}
+                onClick={() => { if (window.confirm('Log out?')) logout(); }}
+                title="Log out">JS</div>
+            </div>
           </div>
         </div>
 
@@ -174,10 +181,26 @@ function AppInner() {
   );
 }
 
-export default function App() {
+function AuthGate() {
+  const { user, loading } = useAuth();
+
+  // While Firebase checks if someone's already logged in (e.g. on page refresh),
+  // show nothing rather than flashing the login screen first.
+  if (loading) return null;
+
+  if (!user) return <Login />;
+
   return (
     <StoreProvider>
       <AppInner />
     </StoreProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
   );
 }

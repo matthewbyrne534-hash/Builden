@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useReducer } from 'react';
 import { useEffect } from 'react';
 import { fetchInternalTeam, fetchInternalRoles, addInternalTeamMember, updateInternalTeamMember, removeInternalTeamMember, addInternalRole } from './internalTeamApi';
+import { fetchClassifications, fetchPersonnelRoster, addClassification, updateClassification, removeClassification, addWorker, updateWorker, removeWorker } from './personnelRosterApi';
 
 const initialState = {
   currentJobId: null,
@@ -15,23 +16,8 @@ const initialState = {
 
   internalTeam: [],
 
-  classifications: [
-    { id: 'c1', name: 'Foreman' },
-    { id: 'c2', name: 'Carpenter' },
-    { id: 'c3', name: 'Laborer' }
-  ],
-  personnelRoster: [
-    { id: 'w1', first: 'Mike', last: 'Donovan', classId: 'c1' },
-    { id: 'w2', first: 'Tony', last: 'Marchetti', classId: 'c1' },
-    { id: 'w3', first: 'Dave', last: 'Sullivan', classId: 'c2' },
-    { id: 'w4', first: 'Jake', last: 'Whitford', classId: 'c2' },
-    { id: 'w5', first: 'Carlos', last: 'Mendez', classId: 'c2' },
-    { id: 'w6', first: 'Brian', last: 'Foley', classId: 'c2' },
-    { id: 'w7', first: 'Tyler', last: 'Brooks', classId: 'c2' },
-    { id: 'w8', first: 'Sean', last: 'Murphy', classId: 'c3' },
-    { id: 'w9', first: 'Adam', last: 'Lefebvre', classId: 'c3' },
-    { id: 'w10', first: 'Marcus', last: 'Webb', classId: 'c3' }
-  ],
+  classifications: [],
+  personnelRoster: [],
 
   gcCompanies: [
     { id: 'gc1', name: 'BBL Construction Services, LLC', phone: '(518) 555-3300', email: 'info@bblcs.com', address: '100 Construction Way, Albany, NY 12205' },
@@ -129,7 +115,7 @@ const Ctx = createContext(null);
 export function StoreProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  // On first load, pull Internal Team data from Firestore instead of starting empty forever
+  // On first load, pull Internal Team and Personnel Roster data from Firestore instead of starting empty forever
   useEffect(() => {
     fetchInternalTeam().then(team => {
       team.forEach(member => dispatch({ type: 'ADD_INTERNAL_TEAM_MEMBER', member }));
@@ -137,15 +123,28 @@ export function StoreProvider({ children }) {
     fetchInternalRoles().then(roles => {
       roles.forEach(role => dispatch({ type: 'ADD_INTERNAL_ROLE', role }));
     });
+    fetchClassifications().then(classes => {
+      classes.forEach(cls => dispatch({ type: 'ADD_CLS', cls }));
+    });
+    fetchPersonnelRoster().then(workers => {
+      workers.forEach(worker => dispatch({ type: 'ADD_WORKER', worker }));
+    });
   }, []);
 
-  // Wrap dispatch so Internal Team actions also write through to Firestore
+  // Wrap dispatch so certain actions also write through to Firestore
   function dispatchAndSync(action) {
     dispatch(action);
     if (action.type === 'ADD_INTERNAL_TEAM_MEMBER') addInternalTeamMember(action.member);
     if (action.type === 'UPDATE_INTERNAL_TEAM_MEMBER') updateInternalTeamMember(action.member);
     if (action.type === 'REMOVE_INTERNAL_TEAM_MEMBER') removeInternalTeamMember(action.id);
     if (action.type === 'ADD_INTERNAL_ROLE') addInternalRole(action.role);
+
+    if (action.type === 'ADD_CLS') addClassification(action.cls);
+    if (action.type === 'UPDATE_CLS') updateClassification(action.cls);
+    if (action.type === 'REMOVE_CLS') removeClassification(action.clsId);
+    if (action.type === 'ADD_WORKER') addWorker(action.worker);
+    if (action.type === 'UPDATE_WORKER') updateWorker(action.worker);
+    if (action.type === 'REMOVE_WORKER') removeWorker(action.workerId);
   }
 
   return <Ctx.Provider value={{ state, dispatch: dispatchAndSync }}>{children}</Ctx.Provider>;

@@ -150,4 +150,4 @@ export function StoreProvider({ children }) {
 
   return <Ctx.Provider value={{ state, dispatch: dispatchAndSync }}>{children}</Ctx.Provider>;
 }
-export function useStore() { return useContext(Ctx); } useStore() { return useContext(Ctx); }
+export function useStore() { return useContext(Ctx); }

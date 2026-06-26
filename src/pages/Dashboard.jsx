@@ -2,22 +2,32 @@
 import React, { useState } from 'react';
 import { useStore } from '../data/store';
 import { fmt, calcPackageTotals } from '../utils/helpers';
-import { Modal, FormGroup, Input } from '../components/UI';
+import { Modal, FormGroup, Input, Tabs } from '../components/UI';
 import { genId } from '../utils/helpers';
 
 export default function Dashboard({ navigate }) {
   const { state, dispatch } = useStore();
   const { jobs } = state;
   const [search, setSearch] = useState('');
+  const [statusTab, setStatusTab] = useState('active'); // 'active' | 'completed' | 'archived'
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({ name: '', num: '', address: '', city: '', state: '', zip: '', gc: '', owner: '', ae: '' });
 
-  // Summary metrics across all jobs
+  // Jobs created before this feature existed have no `status` field at all — treat
+  // that as 'active' so nothing old silently disappears from the list.
+  const activeJobs = jobs.filter(j => (j.status || 'active') === 'active');
+  const completedJobs = jobs.filter(j => j.status === 'completed');
+  const archivedJobs = jobs.filter(j => j.status === 'archived');
+
+  const tabJobs = statusTab === 'active' ? activeJobs : statusTab === 'completed' ? completedJobs : archivedJobs;
+
+  // Summary metrics — only counted across ACTIVE jobs, so a pile of old completed/archived
+  // jobs doesn't distort what's actually happening right now.
   let totalOpenVal = 0, totalOpenPkgs = 0;
   let totalPendingVal = 0, totalPendingPkgs = 0;
   let totalExecutedVal = 0, totalExecutedPkgs = 0;
 
-  jobs.forEach(j => {
+  activeJobs.forEach(j => {
     j.packages.forEach(p => {
       const tots = calcPackageTotals(p);
       const status = p.pkgStatus || 'open';
@@ -27,7 +37,7 @@ export default function Dashboard({ navigate }) {
     });
   });
 
-  const filtered = jobs.filter(j =>
+  const filtered = tabJobs.filter(j =>
     (j.name + j.num + j.address + j.city + j.gc).toLowerCase().includes(search.toLowerCase())
   );
 
@@ -36,6 +46,7 @@ export default function Dashboard({ navigate }) {
     const job = {
       id: genId(), name: form.name, num: form.num, address: form.address, city: form.city,
       state: form.state, zip: form.zip, gc: form.gc, owner: form.owner, ae: form.ae,
+      status: 'active',
       removedRosterIds: [], classificationRates: [], members: [], packages: []
     };
     dispatch({ type: 'ADD_JOB', job });
@@ -56,8 +67,8 @@ export default function Dashboard({ navigate }) {
       <div className="metrics">
         <div className="metric">
           <div className="metric-label">Active Jobs</div>
-          <div className="metric-value">{jobs.length}</div>
-          <div className="metric-sub">{jobs.reduce((s, j) => s + j.packages.length, 0)} total packages</div>
+          <div className="metric-value">{activeJobs.length}</div>
+          <div className="metric-sub">{activeJobs.reduce((s, j) => s + j.packages.length, 0)} total packages</div>
         </div>
         <div className="metric">
           <div className="metric-label">Open / In Progress</div>
@@ -80,7 +91,7 @@ export default function Dashboard({ navigate }) {
       <div className="card">
         <div className="card-header">
           <div className="card-header-left">
-            <div className="card-title">All Jobs</div>
+            <div className="card-title">Jobs</div>
           </div>
           <div className="card-actions">
             <div className="search-wrap" style={{ marginBottom: 0 }}>
@@ -92,6 +103,12 @@ export default function Dashboard({ navigate }) {
             </button>
           </div>
         </div>
+
+        <Tabs tabs={[
+          { id: 'active', label: `Active (${activeJobs.length})` },
+          { id: 'completed', label: `Completed (${completedJobs.length})` },
+          { id: 'archived', label: `Archived (${archivedJobs.length})` }
+        ]} active={statusTab} onChange={setStatusTab} />
 
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -110,7 +127,7 @@ export default function Dashboard({ navigate }) {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={9} style={{ padding: '24px 12px', textAlign: 'center', color: '#aaa', fontStyle: 'italic' }}>No jobs found.</td></tr>
+                <tr><td colSpan={9} style={{ padding: '24px 12px', textAlign: 'center', color: '#aaa', fontStyle: 'italic' }}>No {statusTab} jobs found.</td></tr>
               ) : filtered.map(j => {
                 const openPkgs = j.packages.filter(p => (p.pkgStatus || 'open') === 'open');
                 const openVal = openPkgs.reduce((s, p) => s + calcPackageTotals(p).grand, 0);

@@ -22,6 +22,17 @@ export async function createUserDoc(uid, { companyId, role, first, last, email }
   await setDoc(doc(usersCol, uid), { companyId, role, first, last, email });
 }
 
+// Fetches a company's profile info (name, address, phone, etc.)
+export async function fetchCompany(companyId) {
+  const snap = await getDoc(doc(companiesCol, companyId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+// Updates a company's profile info (does NOT touch createdAt or anything else not passed in)
+export async function updateCompany(companyId, data) {
+  await setDoc(doc(companiesCol, companyId), data, { merge: true });
+}
+
 // Looks up a logged-in user's company/role info by their uid.
 export async function fetchUserDoc(uid) {
   const snap = await getDoc(doc(usersCol, uid));

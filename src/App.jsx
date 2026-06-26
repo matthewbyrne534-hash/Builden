@@ -11,6 +11,7 @@ import PackageDetail from './pages/PackageDetail';
 import TicketEditor from './pages/TicketEditor';
 import PackagePreview from './pages/PackagePreview';
 import Directory from './pages/Directory';
+import Settings from './pages/Settings';
 
 function AppInner() {
   const { state, dispatch } = useStore();
@@ -56,6 +57,7 @@ function AppInner() {
     'ticket-editor': 'T&M Ticket',
     'package-preview': 'Package Preview',
     directory: 'Directory',
+    settings: 'Settings',
     'job-directory': 'Job Directory'
   };
 
@@ -68,6 +70,7 @@ function AppInner() {
       case 'ticket-editor': return <TicketEditor jobId={params.jobId} pkgId={params.pkgId} ticketId={params.ticketId} navigate={navigate} />;
       case 'package-preview': return <PackagePreview jobId={params.jobId} pkgId={params.pkgId} navigate={navigate} />;
       case 'directory': return <Directory navigate={navigate} />;
+      case 'settings': return <Settings />;
       default: return <Dashboard navigate={navigate} />;
     }
   }
@@ -87,6 +90,9 @@ function AppInner() {
           <div className="nav-sep" />
           <div className={`nav-item ${page === 'directory' ? 'active' : ''}`} onClick={() => navigate('directory')}>
             <i className="ti ti-address-book" /> Directory
+          </div>
+          <div className={`nav-item ${page === 'settings' ? 'active' : ''}`} onClick={() => navigate('settings')}>
+            <i className="ti ti-settings" /> Settings
           </div>
         </div>
       </div>

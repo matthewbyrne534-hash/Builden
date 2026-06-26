@@ -5,12 +5,13 @@ import { fetchInternalTeam, fetchInternalRoles, addInternalTeamMember, updateInt
 import { fetchClassifications, fetchPersonnelRoster, addClassification, updateClassification, removeClassification, addWorker, updateWorker, removeWorker } from './personnelRosterApi';
 import { fetchGcCompanies, fetchGcSupers, addGcCompany, updateGcCompany, deleteGcCompany, addGcSuper, updateGcSuper, deleteGcSuper } from './gcDirectoryApi';
 import { fetchJobs, saveJob, deleteJob } from './jobsApi';
+import { fetchCompany, updateCompany } from './companyApi';
 
 const initialState = {
   currentJobId: null,
   recentJobIds: [],
 
-  profile: { name: 'Granite Peak Contracting', address: '14 Industrial Park Rd', city: 'Plattsburgh, NY 12901', phone: '(518) 555-7700', logo: null },
+  profile: { name: '', address: '', city: '', phone: '', email: '', logo: null },
 
   internalRoles: [],
   internalTeam: [],
@@ -24,6 +25,7 @@ const initialState = {
 function reducer(state, action) {
   switch (action.type) {
     case 'SET_CURRENT_JOB': return { ...state, currentJobId: action.id, recentJobIds: [action.id, ...state.recentJobIds.filter(id => id !== action.id)].slice(0, 5) };
+    case 'UPDATE_PROFILE': return { ...state, profile: { ...state.profile, ...action.data } };
     case 'ADD_JOB': return { ...state, jobs: [...state.jobs, action.job] };
     case 'UPDATE_JOB': return { ...state, jobs: state.jobs.map(j => j.id === action.id ? { ...j, ...action.data } : j) };
     case 'DELETE_JOB': return { ...state, jobs: state.jobs.filter(j => j.id !== action.id) };
@@ -98,6 +100,9 @@ export function StoreProvider({ companyId, children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
+    fetchCompany(companyId).then(company => {
+      if (company) dispatch({ type: 'UPDATE_PROFILE', data: company });
+    });
     fetchInternalTeam(companyId).then(team => {
       team.forEach(member => dispatch({ type: 'ADD_INTERNAL_TEAM_MEMBER', member }));
     });
@@ -123,6 +128,8 @@ export function StoreProvider({ companyId, children }) {
 
   function dispatchAndSync(action) {
     dispatch(action);
+
+    if (action.type === 'UPDATE_PROFILE') updateCompany(companyId, action.data);
 
     if (action.type === 'ADD_INTERNAL_TEAM_MEMBER') addInternalTeamMember(action.member, companyId);
     if (action.type === 'UPDATE_INTERNAL_TEAM_MEMBER') updateInternalTeamMember(action.member, companyId);

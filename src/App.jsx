@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { StoreProvider, useStore } from './data/store';
 import { AuthProvider, useAuth } from './data/auth';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import JobDetail from './pages/JobDetail';
 import JobSetup from './pages/JobSetup';
@@ -182,13 +183,23 @@ function AppInner() {
 }
 
 function AuthGate() {
-  const { user, loading } = useAuth();
+  const { user, userDoc, loading } = useAuth();
+  const [authView, setAuthView] = useState('login'); // 'login' | 'signup'
 
   // While Firebase checks if someone's already logged in (e.g. on page refresh),
   // show nothing rather than flashing the login screen first.
   if (loading) return null;
 
-  if (!user) return <Login />;
+  if (!user) {
+    return authView === 'signup'
+      ? <Signup goToLogin={() => setAuthView('login')} />
+      : <Login goToSignup={() => setAuthView('signup')} />;
+  }
+
+  // Logged in via Firebase Auth, but we're still waiting on their company/role lookup
+  // to finish (or, in rare cases, it's missing entirely — e.g. an account that never
+  // got linked to a company). Either way, don't show the app without it.
+  if (!userDoc) return null;
 
   return (
     <StoreProvider>

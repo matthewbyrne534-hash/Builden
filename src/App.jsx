@@ -202,7 +202,7 @@ function AuthGate() {
   if (!userDoc) return null;
 
   return (
-    <StoreProvider>
+    <StoreProvider companyId={userDoc.companyId}>
       <AppInner />
     </StoreProvider>
   );

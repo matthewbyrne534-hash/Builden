@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../data/auth';
 
-export default function Login() {
+export default function Login({ goToSignup }) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,8 +16,6 @@ export default function Login() {
     try {
       await login(email, password);
     } catch (err) {
-      // Firebase's real error codes are things like "auth/wrong-password" — translate
-      // the common ones into something a non-technical user understands.
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
         setError('Incorrect email or password.');
       } else if (err.code === 'auth/invalid-email') {
@@ -71,9 +69,14 @@ export default function Login() {
             </div>
           )}
 
-          <button type="submit" className="btn btn-primary" disabled={submitting} style={{ width: '100%', justifyContent: 'center' }}>
+          <button type="submit" className="btn btn-primary" disabled={submitting} style={{ width: '100%', justifyContent: 'center', marginBottom: 12 }}>
             {submitting ? 'Logging in...' : 'Log in'}
           </button>
+
+          <div style={{ textAlign: 'center', fontSize: 13, color: '#666' }}>
+            New company?{' '}
+            <span style={{ color: '#185FA5', fontWeight: 600, cursor: 'pointer' }} onClick={goToSignup}>Create an account</span>
+          </div>
         </form>
       </div>
     </div>

@@ -6,29 +6,6 @@ import { fetchClassifications, fetchPersonnelRoster, addClassification, updateCl
 import { fetchGcCompanies, fetchGcSupers, addGcCompany, updateGcCompany, deleteGcCompany, addGcSuper, updateGcSuper, deleteGcSuper } from './gcDirectoryApi';
 import { fetchJobs, saveJob, deleteJob } from './jobsApi';
 
-// One-time seed data — only written to Firestore the first time a brand new company's
-// jobs collection is empty. After that first save, Firestore is the source of truth.
-const DEMO_JOB = {
-  id: 'j1', num: '241026', name: 'BOCES - Plattsburgh', address: '32 Bow Arrow Point Drive', city: 'Plattsburgh', state: 'NY', zip: '12901',
-  gc: 'BBL Construction Services, LLC', owner: 'CIDC, Inc.', ae: 'WCGS / Huston',
-  removedRosterIds: [],
-  classificationRates: [
-    { classId: 'c1', regRate: 48.50, otRate: 72.75, dtRate: 97.00 },
-    { classId: 'c2', regRate: 38.00, otRate: 57.00, dtRate: 76.00 },
-    { classId: 'c3', regRate: 32.00, otRate: 48.00, dtRate: 64.00 }
-  ],
-  members: [
-    { id: 'jm1', sourceType: 'internal', sourceId: 'it1', name: 'Chris Ruggles', email: 'cruggles@granitepeak.com', phone: '(518) 555-2210', title: 'Project Manager', permission: 'full', inviteSent: false, inviteStatus: 'not-sent' },
-    { id: 'jm2', sourceType: 'gc', sourceId: 'gs1', name: 'Scott Hamilton', email: 'shamilton@bblcs.com', phone: '(518) 555-3301', role: 'super' },
-    { id: 'jm3', sourceType: 'gc', sourceId: 'gs2', name: 'Paul Wilson', email: 'pwilson@bblcs.com', phone: '(518) 555-3302', role: 'super' }
-  ],
-  packages: [
-    { id: 'p1', num: 'TM-001', numSystem: 'TM-{seq}', title: 'FRP Furnish and Install in the CTE Building', authType: 'Change Event', authRef: 'CE-003', authFileName: null, prepSettings: null, pkgStatus: 'open',
-      tickets: [{ id: 't1', num: 'TM-001.1', date: '2026-02-02', desc: 'Installed FRP wall panels in CTE classroom 102.', labor: [{ id: 'l1_0', workerId: 'w1', workerName: 'Mike Donovan', classId: 'c1', className: 'Foreman', reg: 6, ot: 3, dt: 0, regRate: 48.5, otRate: 72.75, dtRate: 97.0 }, { id: 'l1_1', workerId: 'w5', workerName: 'Carlos Mendez', classId: 'c2', className: 'Carpenter', reg: 6, ot: 3, dt: 0, regRate: 38.0, otRate: 57.0, dtRate: 76.0 }, { id: 'l1_2', workerId: 'w4', workerName: 'Jake Whitford', classId: 'c2', className: 'Carpenter', reg: 8, ot: 0, dt: 0, regRate: 38.0, otRate: 57.0, dtRate: 76.0 }], materials: [], vendors: [], photos: [], foremanId: '', foremanName: '', superId: '', superName: '', status: 'draft' }]
-    }
-  ]
-};
-
 const initialState = {
   currentJobId: null,
   recentJobIds: [],
@@ -140,12 +117,7 @@ export function StoreProvider({ companyId, children }) {
       supers.forEach(sup => dispatch({ type: 'ADD_GC_SUPER', super: sup }));
     });
     fetchJobs(companyId).then(jobs => {
-      if (jobs.length === 0) {
-        saveJob(DEMO_JOB, companyId);
-        dispatch({ type: 'ADD_JOB', job: DEMO_JOB });
-      } else {
-        jobs.forEach(job => dispatch({ type: 'ADD_JOB', job }));
-      }
+      jobs.forEach(job => dispatch({ type: 'ADD_JOB', job }));
     });
   }, [companyId]);
 

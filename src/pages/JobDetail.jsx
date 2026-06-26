@@ -25,6 +25,8 @@ export default function JobDetail({ jobId, navigate, initialView }) {
   const [rosterSearch, setRosterSearch] = useState('');
   const [confirmRemoveRoster, setConfirmRemoveRoster] = useState(null);
 
+  const [confirmStatusChange, setConfirmStatusChange] = useState(null); // { to: 'completed'|'active'|'archived' }
+
   if (!job) return <div className="card"><p style={{ color: '#999' }}>Job not found.</p></div>;
 
   const openPkgs = job.packages.filter(p => p.tickets.some(t => ['draft', 'awaiting-foreman-sig', 'awaiting-super-sig'].includes(t.status)));
@@ -95,6 +97,11 @@ export default function JobDetail({ jobId, navigate, initialView }) {
     dispatch({ type: 'UPDATE_JOB_MEMBER', jobId: job.id, memberId: member.id, data: { permission: level } });
   }
 
+  function changeJobStatus(to) {
+    dispatch({ type: 'SET_JOB_STATUS', id: job.id, status: to });
+    setConfirmStatusChange(null);
+  }
+
   const alreadyOnJobIds = new Set(jobMembers.filter(m => m.sourceType === 'internal').map(m => m.sourceId));
   const alreadySuperIds = new Set(jobMembers.filter(m => m.sourceType === 'gc').map(m => m.sourceId));
 
@@ -138,9 +145,9 @@ export default function JobDetail({ jobId, navigate, initialView }) {
           }
         </td>
         <td>
-          <div style={{ display: 'flex', gap: 4 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'flex-end' }}>
             {member.role !== 'super' && member.inviteStatus !== 'active' && (
-              <button className="btn btn-sm" onClick={() => sendInvite(member)} title="Send invite">
+              <button className="btn btn-sm" onClick={() => sendInvite(member)} title="Send invite" style={{ whiteSpace: 'nowrap' }}>
                 <i className="ti ti-mail" /> {member.inviteStatus === 'invited' ? 'Resend' : 'Invite'}
               </button>
             )}
@@ -153,10 +160,38 @@ export default function JobDetail({ jobId, navigate, initialView }) {
 
   return (
     <div>
-      <Breadcrumb items={[
-        { label: 'Dashboard', onClick: () => navigate('dashboard') },
-        { label: job.num + ' - ' + job.name }
-      ]} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Breadcrumb items={[
+            { label: 'Dashboard', onClick: () => navigate('dashboard') },
+            { label: job.num + ' - ' + job.name }
+          ]} />
+          {job.status === 'completed' && <span className="badge badge-success">Completed</span>}
+          {job.status === 'archived' && <span className="badge badge-gray">Archived</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {(job.status || 'active') === 'active' && (
+            <button className="btn btn-sm" onClick={() => setConfirmStatusChange({ to: 'completed' })}>
+              <i className="ti ti-check" /> Mark Complete
+            </button>
+          )}
+          {job.status === 'completed' && (
+            <>
+              <button className="btn btn-sm" onClick={() => setConfirmStatusChange({ to: 'active' })}>
+                <i className="ti ti-rotate" /> Reopen
+              </button>
+              <button className="btn btn-sm" onClick={() => setConfirmStatusChange({ to: 'archived' })}>
+                <i className="ti ti-archive" /> Archive
+              </button>
+            </>
+          )}
+          {job.status === 'archived' && (
+            <button className="btn btn-sm" onClick={() => setConfirmStatusChange({ to: 'completed' })}>
+              <i className="ti ti-archive-off" /> Unarchive
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="stats-row" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <div className="stat-item">
@@ -243,8 +278,8 @@ export default function JobDetail({ jobId, navigate, initialView }) {
             {internalMembers.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0', fontStyle: 'italic' }}>No team members added yet.</p> : (
               <table className="dir-table" style={{ tableLayout: 'fixed', width: '100%' }}>
                 <colgroup>
-                  <col style={{ width: '18%' }} /><col style={{ width: '22%' }} /><col style={{ width: '13%' }} />
-                  <col style={{ width: '15%' }} /><col style={{ width: '16%' }} /><col style={{ width: '8%' }} /><col style={{ width: '8%' }} />
+                  <col style={{ width: '16%' }} /><col style={{ width: '20%' }} /><col style={{ width: '12%' }} />
+                  <col style={{ width: '13%' }} /><col style={{ width: '14%' }} /><col style={{ width: '11%' }} /><col style={{ width: '14%' }} />
                 </colgroup>
                 <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Title</th><th>Permission</th><th>Status</th><th></th></tr></thead>
                 <tbody>{internalMembers.map(m => <MemberRow key={m.id} member={m} showTitle />)}</tbody>
@@ -263,8 +298,8 @@ export default function JobDetail({ jobId, navigate, initialView }) {
             {supers.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0', fontStyle: 'italic' }}>No superintendents added yet.</p> : (
               <table className="dir-table" style={{ tableLayout: 'fixed', width: '100%' }}>
                 <colgroup>
-                  <col style={{ width: '20%' }} /><col style={{ width: '26%' }} /><col style={{ width: '14%' }} />
-                  <col style={{ width: '18%' }} /><col style={{ width: '14%' }} /><col style={{ width: '8%' }} />
+                  <col style={{ width: '18%' }} /><col style={{ width: '24%' }} /><col style={{ width: '13%' }} />
+                  <col style={{ width: '17%' }} /><col style={{ width: '14%' }} /><col style={{ width: '14%' }} />
                 </colgroup>
                 <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Permission</th><th>Status</th><th></th></tr></thead>
                 <tbody>{supers.map(m => <MemberRow key={m.id} member={m} />)}</tbody>
@@ -410,6 +445,23 @@ export default function JobDetail({ jobId, navigate, initialView }) {
       <ConfirmModal open={!!confirmRemoveRoster} onClose={() => setConfirmRemoveRoster(null)}
         onConfirm={() => { dispatch({ type: 'REMOVE_ROSTER_FROM_JOB', jobId: job.id, workerId: confirmRemoveRoster.id }); setConfirmRemoveRoster(null); }}
         title="Remove from this job" message={`Remove ${confirmRemoveRoster?.first} ${confirmRemoveRoster?.last} from this job's roster? They'll remain in the company-wide Personnel Roster and can be re-added to this job later.`} danger />
+
+      <ConfirmModal open={!!confirmStatusChange} onClose={() => setConfirmStatusChange(null)}
+        onConfirm={() => changeJobStatus(confirmStatusChange.to)}
+        title={
+          confirmStatusChange?.to === 'completed' ? (job.status === 'archived' ? 'Unarchive job' : 'Mark job as Complete')
+          : confirmStatusChange?.to === 'archived' ? 'Archive job'
+          : 'Reopen job'
+        }
+        message={
+          confirmStatusChange?.to === 'completed'
+            ? (job.status === 'archived'
+                ? `Move "${job.num} — ${job.name}" back to Completed? Nothing is deleted — it'll reappear in your Completed jobs list.`
+                : `Mark "${job.num} — ${job.name}" as Complete? Nothing is deleted — all packages and tickets stay exactly as they are. It just moves out of the active job list.`)
+            : confirmStatusChange?.to === 'archived'
+            ? `Archive "${job.num} — ${job.name}"? Nothing is deleted — it'll be tucked away out of the main list, and can be unarchived anytime from the Archived tab.`
+            : `Reopen "${job.num} — ${job.name}"? It'll move back into your active job list.`
+        } />
     </div>
   );
 }

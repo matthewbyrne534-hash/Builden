@@ -61,8 +61,12 @@ function InternalTeamSection() {
     let role = form.role;
     if (addingNewRole) {
       if (!newRoleName.trim()) return alert('Please enter a role title, or select an existing one.');
-      role = newRoleName.trim();
-      dispatch({ type: 'ADD_INTERNAL_ROLE', role });
+      const dup = state.internalRoles.find(r => r.toLowerCase() === newRoleName.trim().toLowerCase());
+      if (dup) { alert(`"${dup}" already exists — using the existing role instead of creating a duplicate.`); role = dup; }
+      else {
+        role = newRoleName.trim();
+        dispatch({ type: 'ADD_INTERNAL_ROLE', role });
+      }
     } else if (!role) {
       return alert('Please select a role or add a new one.');
     }
@@ -187,9 +191,13 @@ function PersonnelRosterSection() {
     let classId = workerForm.classId;
     if (addingNewCls) {
       if (!newClsName.trim()) return alert('Please enter a classification name, or select an existing one.');
-      const newCls = { id: genId(), name: newClsName.trim() };
-      dispatch({ type: 'ADD_CLS', cls: newCls });
-      classId = newCls.id;
+      const dup = state.classifications.find(c => c.name.toLowerCase() === newClsName.trim().toLowerCase());
+      if (dup) { alert(`"${dup.name}" already exists — using the existing classification instead of creating a duplicate.`); classId = dup.id; }
+      else {
+        const newCls = { id: genId(), name: newClsName.trim() };
+        dispatch({ type: 'ADD_CLS', cls: newCls });
+        classId = newCls.id;
+      }
     } else if (!classId) {
       return alert('Please select a classification or add a new one.');
     }
@@ -288,6 +296,8 @@ function GcDirectorySection() {
   function openEditCompany(c) { setCompanyForm({ name: c.name, phone: c.phone, email: c.email, address: c.address }); setEditCompany(c); setShowCompanyModal(true); }
   function saveCompany() {
     if (!companyForm.name) return alert('Company name is required.');
+    const dup = state.gcCompanies.find(c => c.id !== editCompany?.id && c.name.toLowerCase() === companyForm.name.trim().toLowerCase());
+    if (dup) return alert(`"${dup.name}" already exists in your GC Directory. Please use a different name, or find it in the list instead.`);
     if (editCompany) dispatch({ type: 'UPDATE_GC_COMPANY', company: { ...editCompany, ...companyForm } });
     else dispatch({ type: 'ADD_GC_COMPANY', company: { id: genId(), ...companyForm } });
     setShowCompanyModal(false);
@@ -310,9 +320,14 @@ function GcDirectorySection() {
     if (!superForm.first || !superForm.last || !superForm.email) return alert('First name, last name, and email are required.');
     let gcCompanyId = superForm.gcCompanyId;
     if (showInlineCompany && inlineCompanyForm.name) {
-      const newCo = { id: genId(), ...inlineCompanyForm };
-      dispatch({ type: 'ADD_GC_COMPANY', company: newCo });
-      gcCompanyId = newCo.id;
+      const dup = state.gcCompanies.find(c => c.name.toLowerCase() === inlineCompanyForm.name.trim().toLowerCase());
+      if (dup) {
+        gcCompanyId = dup.id; // reuse the existing company instead of creating a duplicate
+      } else {
+        const newCo = { id: genId(), ...inlineCompanyForm };
+        dispatch({ type: 'ADD_GC_COMPANY', company: newCo });
+        gcCompanyId = newCo.id;
+      }
     } else if (!gcCompanyId) {
       return alert('Please select a GC company or add a new one.');
     }

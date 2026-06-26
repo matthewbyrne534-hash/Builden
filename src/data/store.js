@@ -28,6 +28,14 @@ function reducer(state, action) {
     case 'UPDATE_PROFILE': return { ...state, profile: { ...state.profile, ...action.data } };
     case 'ADD_JOB': return { ...state, jobs: [...state.jobs, action.job] };
     case 'UPDATE_JOB': return { ...state, jobs: state.jobs.map(j => j.id === action.id ? { ...j, ...action.data } : j) };
+    case 'SET_JOB_STATUS': return { ...state, jobs: state.jobs.map(j => {
+        if (j.id !== action.id) return j;
+        const now = new Date().toISOString();
+        const extra = action.status === 'completed' ? { completedAt: now }
+          : action.status === 'archived' ? { archivedAt: now }
+          : {}; // reopening back to 'active' doesn't need to clear timestamps — they're just history
+        return { ...j, status: action.status, ...extra };
+      }) };
     case 'DELETE_JOB': return { ...state, jobs: state.jobs.filter(j => j.id !== action.id) };
 
     case 'ADD_INTERNAL_TEAM_MEMBER': return { ...state, internalTeam: [...state.internalTeam, action.member] };
@@ -78,6 +86,7 @@ function reducer(state, action) {
 
 const JOB_TOUCHING_ACTIONS = {
   UPDATE_JOB: a => a.id,
+  SET_JOB_STATUS: a => a.id,
   REMOVE_ROSTER_FROM_JOB: a => a.jobId,
   RESTORE_ROSTER_TO_JOB: a => a.jobId,
   SET_JOB_CLASSIFICATION_RATE: a => a.jobId,

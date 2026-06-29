@@ -2,7 +2,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth } from '../firebaseConfig';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { createCompany, createUserDoc, fetchUserDoc } from './companyApi';
+import { createCompany, createUserDoc, fetchUserDoc, deleteCompanyEntirely } from './companyApi';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
+import { deleteUser } from 'firebase/auth';
 
 const AuthCtx = createContext(null);
 
@@ -48,8 +51,19 @@ export function AuthProvider({ children }) {
     await signOut(auth);
   }
 
+  // Permanently wipes the current Admin's entire company (every job, team member,
+  // roster entry, GC, invite) plus their own account. Used for cleaning up test
+  // companies — NOT something a real customer should ever be able to click without
+  // serious confirmation, since there's no undo.
+  async function deleteAccountAndCompany() {
+    const companyId = userDoc.companyId;
+    await deleteCompanyEntirely(companyId);
+    await deleteDoc(doc(db, 'users', user.uid));
+    await deleteUser(auth.currentUser); // also signs them out automatically
+  }
+
   return (
-    <AuthCtx.Provider value={{ user, userDoc, loading, login, signupAsCompanyAdmin, logout }}>
+    <AuthCtx.Provider value={{ user, userDoc, loading, login, signupAsCompanyAdmin, logout, deleteAccountAndCompany }}>
       {children}
     </AuthCtx.Provider>
   );

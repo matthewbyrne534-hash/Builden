@@ -78,12 +78,16 @@ function CompanyInfoSection() {
 
 // ─── MY LOGIN ──────────────────────────────────────────────────────────────────
 function MyLoginSection() {
-  const { user } = useAuth();
+  const { user, userDoc, deleteAccountAndCompany } = useAuth();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const [showDanger, setShowDanger] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   async function handleChangePassword() {
     setError('');
@@ -110,6 +114,18 @@ function MyLoginSection() {
       }
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDeleteCompany() {
+    setDeleting(true);
+    try {
+      await deleteAccountAndCompany();
+      // No need to navigate anywhere — deleteUser() signs them out automatically,
+      // and the app's normal AuthGate logic takes it from there.
+    } catch (err) {
+      alert('Something went wrong deleting the company. You may need to log out and back in first, then try again.');
+      setDeleting(false);
     }
   }
 
@@ -140,6 +156,38 @@ function MyLoginSection() {
         </button>
         {success && <span style={{ fontSize: 13, color: '#1a7f37', fontWeight: 600 }}>Password updated</span>}
       </div>
+
+      {/* Dev-only cleanup tool — gated on BOTH being an admin AND actually running against
+          the dev Firebase project, so this can never appear for a real paying customer in
+          production, no matter their role. */}
+      {userDoc?.role === 'admin' && process.env.REACT_APP_FIREBASE_PROJECT_ID === 'builden-dev' && (
+        <>
+          <div style={{ height: 1, background: '#f0f0ee', margin: '24px 0 16px' }} />
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#B42318', marginBottom: 8 }}>Danger Zone</div>
+          {!showDanger ? (
+            <button className="btn btn-sm btn-danger" onClick={() => { setShowDanger(true); setConfirmText(''); }}>
+              <i className="ti ti-alert-triangle" /> Delete this company permanently
+            </button>
+          ) : (
+            <div style={{ background: '#FDEEEE', border: '1px solid #f5c2c2', borderRadius: 10, padding: 14 }}>
+              <p style={{ fontSize: 13, color: '#B42318', marginBottom: 10 }}>
+                This permanently deletes every job, team member, roster entry, and GC contact for
+                this company, plus your own login. There is no undo.
+                Mainly useful for cleaning up test companies — not something a real, active company should do.
+              </p>
+              <FormGroup label='Type "DELETE" to confirm'>
+                <Input value={confirmText} onChange={setConfirmText} placeholder="DELETE" />
+              </FormGroup>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button className="btn btn-sm" onClick={() => setShowDanger(false)}>Cancel</button>
+                <button className="btn btn-sm btn-danger" disabled={confirmText !== 'DELETE' || deleting} onClick={handleDeleteCompany}>
+                  {deleting ? 'Deleting...' : 'Permanently delete'}
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

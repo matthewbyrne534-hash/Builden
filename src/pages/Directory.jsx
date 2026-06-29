@@ -41,7 +41,11 @@ function InternalTeamSection() {
 
   const filtered = state.internalTeam.filter(m =>
     (m.first + ' ' + m.last + ' ' + m.email).toLowerCase().includes(search.toLowerCase())
-  );
+  ).sort((a, b) => {
+    const roleCompare = (a.role || '').localeCompare(b.role || '');
+    if (roleCompare !== 0) return roleCompare;
+    return (a.first + ' ' + a.last).localeCompare(b.first + ' ' + b.last);
+  });
 
   function openAdd() {
     setForm({ first: '', last: '', email: '', phone: '', role: '' });
@@ -245,7 +249,14 @@ function PersonnelRosterSection() {
     setShowWorker(false);
   }
 
-  const filteredWorkers = state.personnelRoster.filter(w => (w.first + ' ' + w.last).toLowerCase().includes(search.toLowerCase()));
+  const filteredWorkers = state.personnelRoster.filter(w => (w.first + ' ' + w.last).toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      const aCls = state.classifications.find(c => c.id === a.classId)?.name || '';
+      const bCls = state.classifications.find(c => c.id === b.classId)?.name || '';
+      const clsCompare = aCls.localeCompare(bCls);
+      if (clsCompare !== 0) return clsCompare;
+      return (a.first + ' ' + a.last).localeCompare(b.first + ' ' + b.last);
+    });
 
   return (
     <div>

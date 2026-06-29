@@ -40,8 +40,26 @@ export default function JobDetail({ jobId, navigate, initialView }) {
   const executed = job.packages.reduce((s, p) => s + calcPackageTotals(p).executed, 0);
 
   const jobMembers = job.members || [];
-  const internalMembers = jobMembers.filter(m => m.sourceType === 'internal');
-  const supers = jobMembers.filter(m => m.role === 'super');
+  // Shared with MemberRow below — looks up the CURRENT directory record instead of the
+  // snapshot stored on the job, so sorting and display always reflect live edits.
+  function getLiveInfo(member) {
+    if (member.sourceType === 'internal') {
+      const src = state.internalTeam.find(it => it.id === member.sourceId);
+      if (src) return { name: src.first + ' ' + src.last, email: src.email, phone: src.phone, title: src.role };
+    } else if (member.sourceType === 'gc') {
+      const src = state.gcSupers.find(s => s.id === member.sourceId);
+      if (src) return { name: src.first + ' ' + src.last, email: src.email, phone: src.phone, title: '' };
+    }
+    return { name: member.name, email: member.email, phone: member.phone, title: member.title || '' };
+  }
+
+  const internalMembers = jobMembers.filter(m => m.sourceType === 'internal').sort((a, b) => {
+    const aInfo = getLiveInfo(a), bInfo = getLiveInfo(b);
+    const roleCompare = aInfo.title.localeCompare(bInfo.title);
+    if (roleCompare !== 0) return roleCompare;
+    return aInfo.name.localeCompare(bInfo.name);
+  });
+  const supers = jobMembers.filter(m => m.role === 'super').sort((a, b) => getLiveInfo(a).name.localeCompare(getLiveInfo(b).name));
 
   const jobRoster = getJobRoster(job, state.personnelRoster);
 
@@ -139,17 +157,8 @@ export default function JobDetail({ jobId, navigate, initialView }) {
     };
     const status = statusMap[member.inviteStatus || 'not-sent'];
 
-    // Look up the CURRENT directory record instead of relying on whatever name/email/
-    // phone/title was snapshotted onto the job back when they were added — so editing
-    // someone in the company directory actually updates what shows up here too.
-    let liveName = member.name, liveEmail = member.email, livePhone = member.phone, liveTitle = member.title;
-    if (member.sourceType === 'internal') {
-      const src = state.internalTeam.find(it => it.id === member.sourceId);
-      if (src) { liveName = src.first + ' ' + src.last; liveEmail = src.email; livePhone = src.phone; liveTitle = src.role; }
-    } else if (member.sourceType === 'gc') {
-      const src = state.gcSupers.find(s => s.id === member.sourceId);
-      if (src) { liveName = src.first + ' ' + src.last; liveEmail = src.email; livePhone = src.phone; }
-    }
+    // Same lookup used for sorting above — kept in sync by definition, not by accident.
+    const { name: liveName, email: liveEmail, phone: livePhone, title: liveTitle } = getLiveInfo(member);
 
     return (
       <tr>

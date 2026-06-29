@@ -94,10 +94,17 @@ export default function JobDetail({ jobId, navigate, initialView }) {
   function removeUser(member) { setConfirmRemoveUser(member); }
 
   async function sendInvite(member) {
+    // Use the CURRENT directory record, not whatever was snapshotted when they were
+    // added — so a corrected email actually gets the invite, not an old typo'd one.
+    const src = state.internalTeam.find(it => it.id === member.sourceId);
+    const liveEmail = src?.email || member.email;
+    const liveName = src ? src.first + ' ' + src.last : member.name;
+    const liveTitle = src?.role || member.title;
+
     dispatch({ type: 'UPDATE_JOB_MEMBER', jobId: job.id, memberId: member.id, data: { inviteSent: true, inviteStatus: 'invited' } });
     const token = await createInvite({
       companyId: userDoc.companyId, jobId: job.id, jobNum: job.num, jobName: job.name,
-      memberId: member.id, name: member.name, email: member.email, title: member.title
+      memberId: member.id, name: liveName, email: liveEmail, title: liveTitle
     });
     setInviteLink(`${window.location.origin}/invite/${token}`);
   }
@@ -131,15 +138,28 @@ export default function JobDetail({ jobId, navigate, initialView }) {
       'active': { label: 'Active', cls: 'badge-success' }
     };
     const status = statusMap[member.inviteStatus || 'not-sent'];
+
+    // Look up the CURRENT directory record instead of relying on whatever name/email/
+    // phone/title was snapshotted onto the job back when they were added — so editing
+    // someone in the company directory actually updates what shows up here too.
+    let liveName = member.name, liveEmail = member.email, livePhone = member.phone, liveTitle = member.title;
+    if (member.sourceType === 'internal') {
+      const src = state.internalTeam.find(it => it.id === member.sourceId);
+      if (src) { liveName = src.first + ' ' + src.last; liveEmail = src.email; livePhone = src.phone; liveTitle = src.role; }
+    } else if (member.sourceType === 'gc') {
+      const src = state.gcSupers.find(s => s.id === member.sourceId);
+      if (src) { liveName = src.first + ' ' + src.last; liveEmail = src.email; livePhone = src.phone; }
+    }
+
     return (
       <tr>
         <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="av" style={{ width: 28, height: 28, fontSize: 10 }}>{initials(member.name)}</div>
-          <span style={{ fontWeight: 600 }}>{member.name}</span>
+          <div className="av" style={{ width: 28, height: 28, fontSize: 10 }}>{initials(liveName)}</div>
+          <span style={{ fontWeight: 600 }}>{liveName}</span>
         </div></td>
-        <td>{member.email}</td>
-        <td>{member.phone}</td>
-        {showTitle && <td style={{ color: '#666' }}>{member.title || '—'}</td>}
+        <td>{liveEmail}</td>
+        <td>{livePhone}</td>
+        {showTitle && <td style={{ color: '#666' }}>{liveTitle || '—'}</td>}
         <td>
           {member.role !== 'super' ? (
             <select className="form-input" style={{ fontSize: 12 }} value={member.permission || 'standard'} onChange={e => updatePermission(member, e.target.value)}>

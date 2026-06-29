@@ -5,6 +5,7 @@ import { useAuth } from '../data/auth';
 import { updatePassword } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { Tabs, FormGroup, Input } from '../components/UI';
+import { formatPhone } from '../utils/helpers';
 
 export default function Settings() {
   const [section, setSection] = useState('company'); // 'company' | 'login' | 'billing'
@@ -62,7 +63,7 @@ function CompanyInfoSection() {
         <FormGroup label="Company name" span="2"><Input value={form.name} onChange={v => set('name', v)} placeholder="e.g. Granite Peak Contracting" /></FormGroup>
         <FormGroup label="Address" span="2"><Input value={form.address} onChange={v => set('address', v)} placeholder="Street address" /></FormGroup>
         <FormGroup label="City, State ZIP"><Input value={form.city} onChange={v => set('city', v)} placeholder="e.g. Plattsburgh, NY 12901" /></FormGroup>
-        <FormGroup label="Phone"><Input value={form.phone} onChange={v => set('phone', v)} placeholder="(555) 000-0000" /></FormGroup>
+        <FormGroup label="Phone"><Input value={form.phone} onChange={v => set('phone', formatPhone(v))} placeholder="(555) 000-0000" /></FormGroup>
         <FormGroup label="Company email" span="2"><Input value={form.email} onChange={v => set('email', v)} placeholder="info@company.com" /></FormGroup>
       </div>
       <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12 }}>

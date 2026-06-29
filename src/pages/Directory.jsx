@@ -34,6 +34,11 @@ function InternalTeamSection() {
   const [newRoleName, setNewRoleName] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
 
+  // Manage Roles — same pattern as Manage Classifications: view the full list,
+  // delete one only if nobody currently has it.
+  const [showManageRoles, setShowManageRoles] = useState(false);
+  const [confirmDeleteRole, setConfirmDeleteRole] = useState(null);
+
   const filtered = state.internalTeam.filter(m =>
     (m.first + ' ' + m.last + ' ' + m.email).toLowerCase().includes(search.toLowerCase())
   );
@@ -85,6 +90,7 @@ function InternalTeamSection() {
           <i className="ti ti-search search-icon" />
           <input className="search-input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search internal team..." />
         </div>
+        <button className="btn" onClick={() => setShowManageRoles(true)}><i className="ti ti-list" /> Manage roles</button>
         <button className="btn btn-primary" onClick={openAdd}><i className="ti ti-plus" /> Add team member</button>
       </div>
 
@@ -152,6 +158,34 @@ function InternalTeamSection() {
       <ConfirmModal open={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="Remove team member"
         message={`Remove ${confirmDelete?.first} ${confirmDelete?.last} from the internal team? They will also be removed from any jobs they're currently assigned to.`} danger
         onConfirm={() => { dispatch({ type: 'REMOVE_INTERNAL_TEAM_MEMBER', id: confirmDelete.id }); setConfirmDelete(null); }} />
+
+      <Modal open={showManageRoles} onClose={() => setShowManageRoles(false)} title="Manage Roles"
+        footer={<button className="btn" onClick={() => setShowManageRoles(false)}>Done</button>}>
+        {state.internalRoles.length === 0 ? (
+          <p style={{ color: '#aaa', fontSize: 13 }}>No roles yet.</p>
+        ) : (
+          state.internalRoles.map(r => {
+            const count = state.internalTeam.filter(m => m.role === r).length;
+            return (
+              <div key={r} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 4px', borderBottom: '1px solid #f2f2f0' }}>
+                <div>
+                  <span style={{ fontWeight: 600 }}>{r}</span>
+                  <span style={{ fontSize: 12, color: '#aaa', marginLeft: 8 }}>{count} member{count !== 1 ? 's' : ''}</span>
+                </div>
+                {count === 0 ? (
+                  <button className="btn btn-icon btn-sm btn-danger" onClick={() => setConfirmDeleteRole(r)}><i className="ti ti-trash" /></button>
+                ) : (
+                  <span style={{ fontSize: 11, color: '#aaa' }} title="Reassign or remove every team member with this role first">In use</span>
+                )}
+              </div>
+            );
+          })
+        )}
+      </Modal>
+
+      <ConfirmModal open={!!confirmDeleteRole} onClose={() => setConfirmDeleteRole(null)} title="Delete role"
+        message={`Delete "${confirmDeleteRole}"? No one is currently assigned to it, so this is safe.`} danger
+        onConfirm={() => { dispatch({ type: 'REMOVE_INTERNAL_ROLE', role: confirmDeleteRole }); setConfirmDeleteRole(null); }} />
     </div>
   );
 }
@@ -167,6 +201,11 @@ function PersonnelRosterSection() {
   const [addingNewCls, setAddingNewCls] = useState(false);
   const [newClsName, setNewClsName] = useState('');
   const [confirmRemoveWorker, setConfirmRemoveWorker] = useState(null);
+
+  // Manage Classifications — lets an admin clean up the list itself (e.g. accidental
+  // duplicates), rather than only ever being able to add new ones.
+  const [showManageCls, setShowManageCls] = useState(false);
+  const [confirmDeleteCls, setConfirmDeleteCls] = useState(null);
 
   function openAddWorker() {
     setWorkerForm({ first: '', last: '', classId: '' });
@@ -221,7 +260,10 @@ function PersonnelRosterSection() {
             <div className="card-title">Personnel Roster</div>
             <div className="card-subtitle">Field crew available for ticket labor hours — no login required, no rates stored here</div>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={openAddWorker}><i className="ti ti-plus" /> Add worker</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-sm" onClick={() => setShowManageCls(true)}><i className="ti ti-list" /> Manage classifications</button>
+            <button className="btn btn-primary btn-sm" onClick={openAddWorker}><i className="ti ti-plus" /> Add worker</button>
+          </div>
         </div>
         <SearchBar value={search} onChange={setSearch} placeholder="Search roster..." />
         {filteredWorkers.length === 0 ? <p style={{ color: '#aaa', fontSize: 13, padding: '8px 0' }}>No workers found.</p> : (
@@ -269,6 +311,34 @@ function PersonnelRosterSection() {
       <ConfirmModal open={!!confirmRemoveWorker} onClose={() => setConfirmRemoveWorker(null)} title="Remove worker"
         message={`Remove ${confirmRemoveWorker?.first} ${confirmRemoveWorker?.last} from the company-wide roster? They will no longer appear on any job's ticket dropdowns.`} danger
         onConfirm={() => { dispatch({ type: 'REMOVE_WORKER', workerId: confirmRemoveWorker.id }); setConfirmRemoveWorker(null); }} />
+
+      <Modal open={showManageCls} onClose={() => setShowManageCls(false)} title="Manage Classifications"
+        footer={<button className="btn" onClick={() => setShowManageCls(false)}>Done</button>}>
+        {state.classifications.length === 0 ? (
+          <p style={{ color: '#aaa', fontSize: 13 }}>No classifications yet.</p>
+        ) : (
+          state.classifications.map(c => {
+            const count = state.personnelRoster.filter(w => w.classId === c.id).length;
+            return (
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 4px', borderBottom: '1px solid #f2f2f0' }}>
+                <div>
+                  <span style={{ fontWeight: 600 }}>{c.name}</span>
+                  <span style={{ fontSize: 12, color: '#aaa', marginLeft: 8 }}>{count} worker{count !== 1 ? 's' : ''}</span>
+                </div>
+                {count === 0 ? (
+                  <button className="btn btn-icon btn-sm btn-danger" onClick={() => setConfirmDeleteCls(c)}><i className="ti ti-trash" /></button>
+                ) : (
+                  <span style={{ fontSize: 11, color: '#aaa' }} title="Reassign or remove every worker with this classification first">In use</span>
+                )}
+              </div>
+            );
+          })
+        )}
+      </Modal>
+
+      <ConfirmModal open={!!confirmDeleteCls} onClose={() => setConfirmDeleteCls(null)} title="Delete classification"
+        message={`Delete "${confirmDeleteCls?.name}"? No one is currently assigned to it, so this is safe.`} danger
+        onConfirm={() => { dispatch({ type: 'REMOVE_CLS', clsId: confirmDeleteCls.id }); setConfirmDeleteCls(null); }} />
     </div>
   );
 }

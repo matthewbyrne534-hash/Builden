@@ -34,3 +34,9 @@ export async function removeInternalTeamMember(id) {
 export async function addInternalRole(role, companyId) {
   await setDoc(doc(rolesCol), { name: role, companyId });
 }
+
+export async function removeInternalRole(role, companyId) {
+  const q = query(rolesCol, where('name', '==', role), where('companyId', '==', companyId));
+  const snap = await getDocs(q);
+  await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+}

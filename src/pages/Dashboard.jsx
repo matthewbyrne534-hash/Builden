@@ -4,10 +4,21 @@ import { useStore } from '../data/store';
 import { fmt, calcPackageTotals } from '../utils/helpers';
 import { Modal, FormGroup, Input, Tabs } from '../components/UI';
 import { genId } from '../utils/helpers';
+import { useAuth } from '../data/auth';
 
 export default function Dashboard({ navigate }) {
   const { state, dispatch } = useStore();
-  const { jobs } = state;
+  const { user, userDoc } = useAuth();
+  const isAdmin = userDoc?.role === 'admin';
+
+  // Admins see every job in the company. Anyone else (PMs, Foremen) only sees jobs
+  // they've actually been invited onto and accepted — matched by their own uid showing
+  // up in that job's members list (set when they accept their invite).
+  const visibleJobs = isAdmin
+    ? state.jobs
+    : state.jobs.filter(j => (j.members || []).some(m => m.uid === user?.uid));
+
+  const { jobs } = { jobs: visibleJobs };
   const [search, setSearch] = useState('');
   const [statusTab, setStatusTab] = useState('active'); // 'active' | 'completed' | 'archived'
   const [showNew, setShowNew] = useState(false);
@@ -98,17 +109,21 @@ export default function Dashboard({ navigate }) {
               <i className="ti ti-search search-icon" />
               <input className="search-input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search jobs..." style={{ width: 200 }} />
             </div>
-            <button className="btn btn-primary btn-sm" onClick={() => setShowNew(true)}>
-              <i className="ti ti-plus" /> New job
-            </button>
+            {isAdmin && (
+              <button className="btn btn-primary btn-sm" onClick={() => setShowNew(true)}>
+                <i className="ti ti-plus" /> New job
+              </button>
+            )}
           </div>
         </div>
 
-        <Tabs tabs={[
-          { id: 'active', label: `Active (${activeJobs.length})` },
-          { id: 'completed', label: `Completed (${completedJobs.length})` },
-          { id: 'archived', label: `Archived (${archivedJobs.length})` }
-        ]} active={statusTab} onChange={setStatusTab} />
+        {isAdmin ? (
+          <Tabs tabs={[
+            { id: 'active', label: `Active (${activeJobs.length})` },
+            { id: 'completed', label: `Completed (${completedJobs.length})` },
+            { id: 'archived', label: `Archived (${archivedJobs.length})` }
+          ]} active={statusTab} onChange={setStatusTab} />
+        ) : null}
 
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>

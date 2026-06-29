@@ -3,11 +3,16 @@ import React, { useState } from 'react';
 import { useStore } from '../data/store';
 import { genId, fmt, calcPackageTotals, pkgStatusInfo, buildPkgNum, AUTH_TYPES, initials, getJobRoster, PERMISSION_LEVELS } from '../utils/helpers';
 import { Breadcrumb, Badge, Modal, FormGroup, Input, Select, EmptyState, ConfirmModal, SearchBar } from '../components/UI';
+import { createInvite } from '../data/inviteApi';
+import { useAuth } from '../data/auth';
 
 export default function JobDetail({ jobId, navigate, initialView }) {
   const { state, dispatch } = useStore();
+  const { userDoc } = useAuth();
   const job = state.jobs.find(j => j.id === jobId);
   const view = initialView || null;
+
+  const [inviteLink, setInviteLink] = useState(null); // shown after generating an invite, for the admin to copy/send
 
   const [pkgFilter, setPkgFilter] = useState('all');
   const [showNewPkg, setShowNewPkg] = useState(false);
@@ -88,9 +93,13 @@ export default function JobDetail({ jobId, navigate, initialView }) {
 
   function removeUser(member) { setConfirmRemoveUser(member); }
 
-  function sendInvite(member) {
+  async function sendInvite(member) {
     dispatch({ type: 'UPDATE_JOB_MEMBER', jobId: job.id, memberId: member.id, data: { inviteSent: true, inviteStatus: 'invited' } });
-    alert(`Invite will be sent to ${member.email} once email authentication is enabled in Phase 3.`);
+    const token = await createInvite({
+      companyId: userDoc.companyId, jobId: job.id, jobNum: job.num, jobName: job.name,
+      memberId: member.id, name: member.name, email: member.email, title: member.title
+    });
+    setInviteLink(`${window.location.origin}/invite/${token}`);
   }
 
   function updatePermission(member, level) {
@@ -462,6 +471,21 @@ export default function JobDetail({ jobId, navigate, initialView }) {
             ? `Archive "${job.num} — ${job.name}"? Nothing is deleted — it'll be tucked away out of the main list, and can be unarchived anytime from the Archived tab.`
             : `Reopen "${job.num} — ${job.name}"? It'll move back into your active job list.`
         } />
+
+      {/* Shows the real invite link after generating one — there's no automatic email
+          sending yet (that needs a backend email service), so for now this is copy-and-send. */}
+      <Modal open={!!inviteLink} onClose={() => setInviteLink(null)} title="Invite link ready"
+        footer={<button className="btn btn-primary" onClick={() => setInviteLink(null)}>Done</button>}>
+        <p style={{ fontSize: 13, color: '#666', marginBottom: 12 }}>
+          Copy this link and send it to them yourself (email, text, however you'd like) — automatic email sending isn't built yet.
+        </p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input className="form-input" readOnly value={inviteLink || ''} style={{ flex: 1, fontSize: 12 }} onClick={e => e.target.select()} />
+          <button className="btn" onClick={() => { navigator.clipboard.writeText(inviteLink); alert('Copied!'); }}>
+            <i className="ti ti-copy" /> Copy
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

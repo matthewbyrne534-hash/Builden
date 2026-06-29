@@ -1,7 +1,7 @@
 // src/data/store.js
 import React, { createContext, useContext, useReducer } from 'react';
 import { useEffect } from 'react';
-import { fetchInternalTeam, fetchInternalRoles, addInternalTeamMember, updateInternalTeamMember, removeInternalTeamMember, addInternalRole } from './internalTeamApi';
+import { fetchInternalTeam, fetchInternalRoles, addInternalTeamMember, updateInternalTeamMember, removeInternalTeamMember, addInternalRole, removeInternalRole } from './internalTeamApi';
 import { fetchClassifications, fetchPersonnelRoster, addClassification, updateClassification, removeClassification, addWorker, updateWorker, removeWorker } from './personnelRosterApi';
 import { fetchGcCompanies, fetchGcSupers, addGcCompany, updateGcCompany, deleteGcCompany, addGcSuper, updateGcSuper, deleteGcSuper } from './gcDirectoryApi';
 import { fetchJobs, saveJob, deleteJob } from './jobsApi';
@@ -42,6 +42,7 @@ function reducer(state, action) {
     case 'UPDATE_INTERNAL_TEAM_MEMBER': return { ...state, internalTeam: state.internalTeam.map(m => m.id === action.member.id ? action.member : m) };
     case 'REMOVE_INTERNAL_TEAM_MEMBER': return { ...state, internalTeam: state.internalTeam.filter(m => m.id !== action.id) };
     case 'ADD_INTERNAL_ROLE': return { ...state, internalRoles: state.internalRoles.includes(action.role) ? state.internalRoles : [...state.internalRoles, action.role] };
+    case 'REMOVE_INTERNAL_ROLE': return { ...state, internalRoles: state.internalRoles.filter(r => r !== action.role) };
 
     case 'ADD_CLS': return { ...state, classifications: [...state.classifications, action.cls] };
     case 'UPDATE_CLS': return { ...state, classifications: state.classifications.map(c => c.id === action.cls.id ? action.cls : c) };
@@ -144,6 +145,7 @@ export function StoreProvider({ companyId, children }) {
     if (action.type === 'UPDATE_INTERNAL_TEAM_MEMBER') updateInternalTeamMember(action.member, companyId);
     if (action.type === 'REMOVE_INTERNAL_TEAM_MEMBER') removeInternalTeamMember(action.id);
     if (action.type === 'ADD_INTERNAL_ROLE') addInternalRole(action.role, companyId);
+    if (action.type === 'REMOVE_INTERNAL_ROLE') removeInternalRole(action.role, companyId);
 
     if (action.type === 'ADD_CLS') addClassification(action.cls, companyId);
     if (action.type === 'UPDATE_CLS') updateClassification(action.cls, companyId);

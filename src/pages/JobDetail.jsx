@@ -156,8 +156,8 @@ export default function JobDetail({ jobId, navigate, initialView }) {
         <td>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'flex-end' }}>
             {member.role !== 'super' && member.inviteStatus !== 'active' && (
-              <button className="btn btn-sm" onClick={() => sendInvite(member)} title="Send invite" style={{ whiteSpace: 'nowrap' }}>
-                <i className="ti ti-mail" /> {member.inviteStatus === 'invited' ? 'Resend' : 'Invite'}
+              <button className="btn btn-icon btn-sm" onClick={() => sendInvite(member)} title={member.inviteStatus === 'invited' ? 'Resend invite' : 'Send invite'}>
+                <i className="ti ti-mail" />
               </button>
             )}
             <button className="btn btn-icon btn-sm btn-danger" onClick={() => removeUser(member)}><i className="ti ti-trash" /></button>

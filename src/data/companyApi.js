@@ -1,6 +1,6 @@
 // src/data/companyApi.js
 import { db } from '../firebaseConfig';
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs, deleteDoc, query, where } from 'firebase/firestore';
 
 const companiesCol = collection(db, 'companies');
 const usersCol = collection(db, 'users');
@@ -31,6 +31,19 @@ export async function fetchCompany(companyId) {
 // Updates a company's profile info (does NOT touch createdAt or anything else not passed in)
 export async function updateCompany(companyId, data) {
   await setDoc(doc(companiesCol, companyId), data, { merge: true });
+}
+
+// Deletes EVERY document tagged with this companyId, across every company-data
+// collection, plus the company record itself and the caller's own user doc.
+// Does NOT delete the caller's Firebase Auth login — that's a separate, final step
+// (see deleteOwnLogin below), since Auth and Firestore are different systems.
+export async function deleteCompanyEntirely(companyId) {
+  const collections = ['internalTeam', 'internalRoles', 'classifications', 'personnelRoster', 'gcCompanies', 'gcSupers', 'jobs', 'invites'];
+  for (const colName of collections) {
+    const snap = await getDocs(query(collection(db, colName), where('companyId', '==', companyId)));
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+  }
+  await deleteDoc(doc(companiesCol, companyId));
 }
 
 // Looks up a logged-in user's company/role info by their uid.

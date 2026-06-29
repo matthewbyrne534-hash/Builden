@@ -17,7 +17,8 @@ import Settings from './pages/Settings';
 
 function AppInner() {
   const { state, dispatch } = useStore();
-  const { logout } = useAuth();
+  const { logout, userDoc } = useAuth();
+  const isAdmin = userDoc?.role === 'admin';
   const [page, setPage] = useState('dashboard');
   const [params, setParams] = useState({});
   const [showJobSwitcher, setShowJobSwitcher] = useState(false);
@@ -89,13 +90,17 @@ function AppInner() {
           <div className={`nav-item ${page === 'dashboard' ? 'active' : ''}`} onClick={() => navigate('dashboard')}>
             <i className="ti ti-layout-dashboard" /> Dashboard
           </div>
-          <div className="nav-sep" />
-          <div className={`nav-item ${page === 'directory' ? 'active' : ''}`} onClick={() => navigate('directory')}>
-            <i className="ti ti-address-book" /> Directory
-          </div>
-          <div className={`nav-item ${page === 'settings' ? 'active' : ''}`} onClick={() => navigate('settings')}>
-            <i className="ti ti-settings" /> Settings
-          </div>
+          {isAdmin && (
+            <>
+              <div className="nav-sep" />
+              <div className={`nav-item ${page === 'directory' ? 'active' : ''}`} onClick={() => navigate('directory')}>
+                <i className="ti ti-address-book" /> Directory
+              </div>
+              <div className={`nav-item ${page === 'settings' ? 'active' : ''}`} onClick={() => navigate('settings')}>
+                <i className="ti ti-settings" /> Settings
+              </div>
+            </>
+          )}
         </div>
       </div>
 

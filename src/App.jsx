@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './data/auth';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import OwnerDashboard from './pages/OwnerDashboard';
+import AcceptInvite from './pages/AcceptInvite';
 import Dashboard from './pages/Dashboard';
 import JobDetail from './pages/JobDetail';
 import JobSetup from './pages/JobSetup';
@@ -220,6 +221,14 @@ function AuthGate() {
 }
 
 export default function App() {
+  // The whole app is otherwise route-less (everything is in-memory page state) — this is
+  // the ONE exception, since an invite link has to work for someone who isn't logged in
+  // yet and is landing fresh from an email/text, not clicking around inside the SPA.
+  const inviteMatch = window.location.pathname.match(/^\/invite\/(.+)$/);
+  if (inviteMatch) {
+    return <AcceptInvite token={inviteMatch[1]} />;
+  }
+
   return (
     <AuthProvider>
       <AuthGate />

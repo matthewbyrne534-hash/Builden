@@ -4,6 +4,7 @@ import { StoreProvider, useStore } from './data/store';
 import { AuthProvider, useAuth } from './data/auth';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import OwnerDashboard from './pages/OwnerDashboard';
 import Dashboard from './pages/Dashboard';
 import JobDetail from './pages/JobDetail';
 import JobSetup from './pages/JobSetup';
@@ -206,6 +207,10 @@ function AuthGate() {
   // to finish (or, in rare cases, it's missing entirely — e.g. an account that never
   // got linked to a company). Either way, don't show the app without it.
   if (!userDoc) return null;
+
+  // Owner accounts aren't attached to any company — route them to a separate
+  // dashboard instead of the normal company workspace.
+  if (userDoc.role === 'owner') return <OwnerDashboard />;
 
   return (
     <StoreProvider companyId={userDoc.companyId}>
